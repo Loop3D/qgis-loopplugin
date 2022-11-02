@@ -21,10 +21,6 @@ Launching the plugin:*
   <img src="launch_plugin.gif?raw=true"/>
 </p>
 
-![]( launch_plugin.gif)
-
-
-
 ### Set the project path
 
 - Select the Project Directory:
@@ -54,7 +50,9 @@ Launching the plugin:*
 
  Automated results after the geology layer is loaded:*
 
-![]( filter_geol_data.gif)
+<p align="center">
+<img src="filter_geol_data.gif"/>
+</p>
 
 ### Repeat the process for Fault Polyline, Structure Point and DTM Layers
 
