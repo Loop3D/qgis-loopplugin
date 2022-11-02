@@ -51,7 +51,7 @@ Launching the plugin:*
  Automated results after the geology layer is loaded:*
 
 <p align="center">
-<img src="filter_geol_data.gif"/>
+<img src="filter_geol_data.gif" height="60" width="60" >
 </p>
 
 ### Repeat the process for Fault Polyline, Structure Point and DTM Layers
