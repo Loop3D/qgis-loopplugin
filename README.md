@@ -17,9 +17,9 @@ A usage example can be seen below:
 
 Launching the plugin:*
 
-<p align="center">
-<![]( launch_plugin.gif)>
-</p>
+
+![]( launch_plugin.gif)
+
 
 
 ### Set the project path
@@ -50,9 +50,9 @@ Launching the plugin:*
  An example can be seen below:
 
  Automated results after the geology layer is loaded:*
-<p align="center">
-![]( filter_geol_data.gif)
-</p>
+
+       ![]( filter_geol_data.gif)
+
 ### Repeat the process for Fault Polyline, Structure Point and DTM Layers
 
 - Same process as the above.
