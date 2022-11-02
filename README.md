@@ -16,9 +16,12 @@ the various shapefile and raster files are then automatically filter to create b
 A usage example can be seen below:
 
 Launching the plugin:*
+++++
 <p align="center">
-![]( launch_plugin.gif)
+<![]( launch_plugin.gif)>
 </p>
+++++
+
 ### Set the project path
 
 - Select the Project Directory:
