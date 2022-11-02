@@ -20,7 +20,7 @@ A usage example can be seen below:
 Launch the plugin by selcting the Loop Icon: <img src="icon.png?raw=true">:*
 
 <p align="center">
-  <img src="launch_plugin.gif?raw=true">
+  <img src="launch_plugin.gif?raw=true" width=30 height=30>
 </p>
 
 ### Set the project path
