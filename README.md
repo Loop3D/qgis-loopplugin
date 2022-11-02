@@ -17,10 +17,10 @@ and then various field names for the shapefile and raster files are then analyse
 
 A usage example can be seen below:
 
-Launch the plugin by selecting the Loop Icon in QGIS, or by selecting Loop Processor from the plugin Menu:*
+Launch the plugin by selecting the Loop Icon in QGIS, or by selecting Loop Processor from the plugin Menu:*   
 
 <p align="center">
-  <img src="launch_plugin.gif?raw=true" width=30 height=30>
+  <img src="launch_plugin.gif?raw=true">
 </p>
 
 ### Set the project path
