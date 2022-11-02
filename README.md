@@ -9,7 +9,7 @@ the various shapefile and raster files are then automatically filter to create b
 
 ## How to install **loopplugin**?
 
-   You can git clone this plugin from the Loop3D repository. [https://github.com/Loop3D/qgis-loopplugin]
+   You can git clone this plugin from the Loop3D repository. [https://github.com/Loop3D/qgis-loopplugin](https://github.com/Loop3D/qgis-loopplugin)
 
 ## How to run **loopplugin**?
 
