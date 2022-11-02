@@ -70,6 +70,8 @@ Launching the plugin:*
 
 * From this point, the final output are data.json and Run_test.py available in your project directory can be used as input to Map2loop/LoopStructural software.    
 * If you move the files around you will have to edit the Run_test.py script accordingly to reset the paths.
+* Assuming that the files paths are correct, and that map2loop is installed, you can run map2loop by going into a python shell and typing:   
+   python Run_test.py   and the outputs will be stored in the project directory defined earlier on. 
 
 ### Future releases:
 
