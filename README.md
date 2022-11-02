@@ -16,9 +16,9 @@ the various shapefile and raster files are then automatically filter to create b
 A usage example can be seen below:
 
 Launching the plugin:*
-
+<p align="center">
 ![]( launch_plugin.gif)
-
+</p>
 ### Set the project path
 
 - Select the Project Directory:
@@ -31,14 +31,14 @@ Launching the plugin:*
 
 - Click into (Load Geology Polygon Layer) to load the geology shapefile
 - Once loaded, automatically the multiple combobox will be filled with Layer columns names.
-- Note: Check that the filled values are correctly selected in the combobox.
+-  ```diff Check that the filled values are correctly selected in the combobox.```
 - Also a text label appear on top of QLineEditor for example for the top one, Enter sill text, 
   while the botton will show (Enter intrusion text). In these QLineEditor, default values are printed out, i.e sill=sill. However, you can delete those values and input your own.
 
 - For example:
    * Rocktype 1* --------> rocktype1 
    * Min Age*    --------> min_age_ma
-   
+
 - After every combobox selected, the user click (Save Layer Params) to save their geology  
   parameters.
 - Once (Save layer Params) is clicked, individual parameter in the combobox is saved and this is 
@@ -47,9 +47,9 @@ Launching the plugin:*
  An example can be seen below:
 
  Automated results after the geology layer is loaded:*
-
+<p align="center">
 ![]( filter_geol_data.gif)
-
+</p>
 ### Repeat the process for Fault Polyline, Structure Point and DTM Layers
 
 - Same process as the above.
@@ -66,7 +66,7 @@ Launching the plugin:*
    * Click "Create Json File" to generate a "data.json" in your Project Directory.
    * Click "Create Py Script" to generate a "Run_test.py" in your Project Directory.
 
-* From this point, the final output are data.json and Run_test.py available in your project directory can be used as input to Map2loop/LoopStructural software
+* From this point, the final output are data.json and Run_test.py available in your project directory can be used as input to Map2loop/LoopStructural software.
 
 ### Future releases:
 
