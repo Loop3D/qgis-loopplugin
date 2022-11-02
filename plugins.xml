@@ -15,7 +15,7 @@
 <update_date>2022-11-02</update_date>
 <experimental>True</experimental>
 <deprecated>False</deprecated>
-<tracker></tracker>
+<tracker>https://github.com/Loop3D/qgis-loopplugin/issues</tracker>
 <repository>https://github.com/Loop3D/qgis-loopplugin</repository>
 <tags>3D,geology</tags>
 </pyqgis_plugin>
