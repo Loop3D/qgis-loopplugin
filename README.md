@@ -69,7 +69,7 @@ Launching the plugin:*
    * Click "Create Py Script" to generate a "Run_test.py" in your Project Directory.
 
 * From this point, the final output are data.json and Run_test.py available in your project directory can be used as input to Map2loop/LoopStructural software.    
-* If you move the files around you will have to edit the Run_tes.py script accordingly to reset the paths.
+* If you move the files around you will have to edit the Run_test.py script accordingly to reset the paths.
 
 ### Future releases:
 
