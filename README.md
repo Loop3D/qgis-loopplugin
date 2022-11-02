@@ -17,6 +17,9 @@ A usage example can be seen below:
 
 Launching the plugin:*
 
+<p align="center">
+  <img src="launch_plugin.gif?raw=true"/>
+</p>
 
 ![]( launch_plugin.gif)
 
@@ -51,7 +54,7 @@ Launching the plugin:*
 
  Automated results after the geology layer is loaded:*
 
-       ![]( filter_geol_data.gif)
+![]( filter_geol_data.gif)
 
 ### Repeat the process for Fault Polyline, Structure Point and DTM Layers
 
