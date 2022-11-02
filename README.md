@@ -9,7 +9,7 @@ and then various field names for the shapefile and raster files are then analyse
 
 ## How to install **loopplugin**?
 
-   You can git clone this plugin from the Loop3D repository. [https://github.com/Loop3D/qgis-loopplugin](https://github.com/Loop3D/qgis-loopplugin). You can also download hte repository as a zip file from <a href="https://github.com/Loop3D/qgis-loopplugin/archive/refs/heads/master.zip">here</a> and upload the zip file to QGIS using the plugin manager.   
+   You can git clone this plugin from the Loop3D repository. [https://github.com/Loop3D/qgis-loopplugin](https://github.com/Loop3D/qgis-loopplugin). You can also download the repository as a zip file from <a href="https://github.com/Loop3D/qgis-loopplugin/archive/refs/heads/master.zip">[here]</a> and upload the zip file to QGIS using the plugin manager.   
 
 ## How to run **loopplugin**?
 
