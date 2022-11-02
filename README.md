@@ -4,8 +4,8 @@
 
 ## Why loopplugin?
 
-This plugin let you select the raster and/or vector datasets from your local directory. Once the plugin is started, you can selects your files,
-the various shapefile and raster files are then analysed and an output json file and python script are generated that is used to run map2Loop (Loop project).
+This plugin lets you select the raster and/or vector datasets from your local directory. Once the plugin is started, you can selects your files,
+and then various field names for the shapefile and raster files are then analysed and an output json file and python script are generated that is used to run map2Loop (Loop project).   
 
 ## How to install **loopplugin**?
 
