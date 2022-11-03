@@ -6,7 +6,7 @@
 <version>0.0.1</version>
 <qgis_minimum_version>3.22</qgis_minimum_version>
 <homepage>https://loop3d.github.io/</homepage>
-<file_name>master.zip</file_name>
+<file_name>qgis-loopplugin.zip</file_name>
 <icon>icon.png</icon>
 <author_name>Michel Nzikou</author_name>
 <download_url>http://13.211.217.129/qgis-loopplugin.zip</download_url>
