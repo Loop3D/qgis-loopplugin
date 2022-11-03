@@ -1,5 +1,5 @@
 <plugins>
-<pyqgis_plugin name="qgis-loopplugin-master" version="0.0.1">
+<pyqgis_plugin name="qgis-loopplugin" version="0.0.1">
 <description>
 <![CDATA[ Loop QGIS module supporting map2loop and one day the rest of Loop. ]]>
 </description>
@@ -9,7 +9,7 @@
 <file_name>master.zip</file_name>
 <icon>icon.png</icon>
 <author_name>Michel Nzikou</author_name>
-<download_url>https://github.com/Loop3D/qgis-loopplugin/archive/refs/heads/master.zip</download_url>
+<download_url>http://13.211.217.129/qgis-loopplugin.zip</download_url>
 <uploaded_by>Loop</uploaded_by>
 <create_date>2022-11-02</create_date>
 <update_date>2022-11-02</update_date>
