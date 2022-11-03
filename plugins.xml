@@ -1,5 +1,5 @@
 <plugins>
-<pyqgis_plugin name="qgis-loopplugin" version="0.0.1">
+<pyqgis_plugin name="Loop processor" version="0.0.1">
 <description>
 <![CDATA[ Loop QGIS module supporting map2loop and one day the rest of Loop. ]]>
 </description>
