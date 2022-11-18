@@ -3,13 +3,13 @@
 #############################################################################################################
 def create_orientation_help(col_list,id,layerobjectName):#(elt1, elt2, elt3):
     #Orientations                                       
-    d_params             = ['dip','DIP','Dip','diP','INCLINATIO','DIp','INCLINATN','DiP']
+    d_params             = ['dip','INCLINATIO','INCLINATN']
     d_help               = 'Dip*: field that contains dip information.'
-    dd_params            = ["azimuth2",'azimuth','dip direction',"azimuth",'AZIMUTH_TR','STRIKE']
+    dd_params            = ["azimuth2",'azimuth','dip direction','AZIMUTH_TR','STRIKE']
     dd_help              = 'Dip Direction*: field that contains dip direction information.'
     sf_params            = ['feature','ObsType','codedescpt','STRUCTURE_','DESCRIPT','SUB_TYPE','SUBFEATURE']
     sf_help              = 'Feature*: field that contains information on type of structure.'
-    bedding_params       = ['Bed','Strata','bedding','Bed','beding']
+    bedding_params       = ['Bed','Strata','bedding','beding']
     bedding_help         =  'Bedding flag: text to search for in field defined by sf code to show that this is a bedding measurement.'
     otype_params         = ['dip direction','FeatureCodeDesc', 'strike']
     otype_help           = 'Dip Direction Convention*: flag to determine measurement convention (currently <strike> or <dip direction>).'
@@ -53,7 +53,7 @@ def create_orientation_help(col_list,id,layerobjectName):#(elt1, elt2, elt3):
     u_help               = 'FM code*: field that contains alternate stratigraphic coding.'
     r1_params            = ['rocktype1','RCS_ORIGIN','class','LithOther','No_col','RANK','LITH_LIST']
     r1_help              = 'Rocktype 1*: field that contains  extra lithology information.'
-    r2_params            = ['rocktype2','No_col','igneous_ty','dolerite','No_col','TYPE','GENESIS']
+    r2_params            = ['rocktype2','No_col','igneous_ty','dolerite','TYPE','GENESIS']
     r2_help              = 'Rocktype 1*: field that contains even more lithology information.'
     sill_params          = ['sill','intrusive']
     sill_help            = 'Sill: text to search for in field defined by ds code to show that this is a sill.'
@@ -63,7 +63,7 @@ def create_orientation_help(col_list,id,layerobjectName):#(elt1, elt2, elt3):
     volcanic_help        = 'text to search for in field defined by ds code to show that this is an volv=canic (not intrusion).'
 
     #timing                                     
-    min_params           = ['min_age_ma','MIN_TIME_Y','top_end_ag','AgeMin','top_end_ag','RELAGE','MINAGE','No_col', 'RM_AGE']
+    min_params           = ['min_age_ma','MIN_TIME_Y','top_end_ag','AgeMin','RELAGE','MINAGE','No_col', 'RM_AGE']
     min_help             = 'Min Age*: field that contains minimum age of unit defined by ccode.'
     max_params           = ['max_age_ma','MAX_TIME_Y','base_start','AgeMax','RELAGE','MAXAGE','No_col','RM_AGE']
     max_help             = 'Max Age*: field that contains maximum age of unit defined by ccode.'

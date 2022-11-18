@@ -21,27 +21,23 @@
  *                                                                         *
  ***************************************************************************/
 """
-
-#########
-# Import the code for the DockWidget
 import os
 import sys
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
-from PyQt5.QtWidgets import QComboBox,QLabel,QAction, QFileDialog, QMessageBox, QTreeWidgetItem,QTextEdit,QVBoxLayout
+from PyQt5.QtWidgets import  QFileDialog, QMessageBox
 from qgis.utils import iface
-from qgis.core import QgsSettings
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QFont
-from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
-#####
+
 import os.path
 import time
-from .Load_Vectors import shapeFileloader,xLayerReader,create_json_file,evaluatePipeLine,RemoveAllLayersExcept
-from .CreatePythonFile import create_a_python_file
-from .Help_function import create_orientation_help
-from functools import partial
-#
+from .load_vectors import shape_file_loader,xlayer_reader,create_json_file
+from .create_python_file import create_a_python_file
+from .help_function import create_orientation_help
+from .feature_import import label_mover,qline_and_label_mover,qlineeditor_default_string
+#from .layer_parameter_extractor import create_geology_idname
+from .clear_features import clear_all_label,clear_partially_combo_list,combo_list
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -59,47 +55,54 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         ######
         self.setupUi(self)
-### Toggle check box
         self.SearchFolder.setEnabled(False)
-        ###### 
         self.params_function_activator(False) 
+        # Connect select button to select_output_file method
         self.FolderSearch_Button.pressed.connect(self.select_folder)
-        ################ add Geology and save its layer param into a list
-        self.GeolButton.clicked.connect(self.create_geology_IdName)
-        #################   add Fault and save its layer param into a list 
-        self.FaultButton.clicked.connect(self.create_fault_IdName)
-        ################# add struct and save its layer param into a list
-        self.StructButton.clicked.connect(self.create_struct_IdName)
-        ################# Below we are pushing default data for Fold and Mineral Deposit Layer
+        self.GeolButton.clicked.connect(self.create_geology_idname)
+        self.FaultButton.clicked.connect(self.create_fault_idname)
+        self.StructButton.clicked.connect(self.create_struct_idname)
         self.DTMButton.clicked.connect(self.saveDTM_path)
         self.Aus_checkBox.clicked.connect(self.saveAUS_path)
-        ################# Create json file
         self.Json_pushButton.clicked.connect(self.createJson)    
-        ################# Create py file
         self.CreatePyButton.clicked.connect(self.save_your_python_file) 
-        ## Here we inativate ROI and its associated checkbox..Ongoing work
+        #####
         self.ROI_checkBox.setEnabled(False)
         self.ROIButton.setEnabled(False)
-        ## Here we inativate verbose1,2,3..Ongoing work
+        ## Here we inactivate verbose1,2,3..Ongoing work
         self.Verbose1_radioButton.setEnabled(False)
         self.Verbose2_radioButton.setEnabled(False)
         self.Verbose3_radioButton.setEnabled(False)
 #**********************************************************************************************************
- ############################################################################################################       
-    # ##### This function  select folder name/project name from it's folder
+        self.PlaceHoldercomboBox.hide()
+        self.PlaceHolderQlineEdit.hide()
+        self.CRS_LineEditor.hide()                       ### delete crs value
+        self.CRS_label.hide()                            ### hide crs label
+
+       
+
     def select_folder(self):
+        '''
+        This function return the project folder directory, in which the json and python script will be saved.
+        Here, the user will be ask to search their data directory and select its folder 
+        '''
         foldername = QFileDialog.getExistingDirectory(self.FolderSearch_Button, "Select folder ","",)
         self.SearchFolder.setText(foldername)
         return 
-    ###### This function activate Layer into a qgis workspace and return the layer_name list (Col name of the table)
+   
+
     def activate_layers(self,label):
+        '''
+        Once Load Geology is released, the function will ask the user to search the data directory.
+        Then, in the data directory select their layer of interest. 
+        '''
         try:
             shape_file_list = []
             for shape_file in QFileDialog.getOpenFileNames(self):
                 shape_file_list.append(shape_file)
             list_of_files     = shape_file_list[0]
             self.path_file    = list_of_files[0]
-            self.colNames     = shapeFileloader(list_of_files)
+            self.colNames     = shape_file_loader(list_of_files)
         except:
             buttonReply = QMessageBox.question(self, 'OOPS?', 'Select '+str(label).split(' ')[1]+' layer now?', QMessageBox.Yes)
             if buttonReply == QMessageBox.Yes:
@@ -109,223 +112,235 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     shape_file_list.append(shape_file)
                 list_of_files     = shape_file_list[0]
                 self.path_file    = list_of_files[0]
-                self.colNames     = shapeFileloader(list_of_files)
+                self.colNames     = shape_file_loader(list_of_files)
         return self.colNames,self.path_file
-#**********************************************************************************************************
-############################################################################################################
-    ### This function create Geology ID Name and for all combobox available
-    ### X,Y .. defined the new position of the QLineEdit and Qlabel position when the Fault Layer is selected
-    def create_geology_IdName(self):
-        # #### To desactivate the QpushButton for all the layers so that it can't be used in any other call
-            self.QPushbutton_functionActivator(False,self.FaultButton,self.StructButton,self.DTMButton)
-            #####
-            p,self.GeolPath  = self.activate_layers(self.sender().text())                                    ## This help select the shapefile
-            if self.GeolButton.objectName()=='GeolButton':
-                self.GeolPath= self.GeolPath
-            geol_comboHeader = ['Formation*', 'Group*','Supergroup*', 'Description*', 'Fm code*', 'Rocktype 1*','Rocktype 2*','Polygon ID*','Min Age*','Max Age*']
-            self.label_mover(geol_comboHeader)
-            self.colNames    = xLayerReader()
-            #print(colNames)
-            self.combo_column_appender(self.colNames,self.GeolButton.objectName())        # This code add element in combo items
-            #self.label_replacer(geol_placeholder)      # This code changes 1st item of combo box
-            ## The below section transform the label and QLineEditor and move it to X and Y
-            self.QLine_and_Label_mover(320,210,320,230," Enter Sill Text:",self.Sill_Label,self.Sill_LineEditor)
-            self.QLine_and_Label_mover(320,280,320,300," Enter Intrusion Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
-            ## The below write the 2 define string into two QLineEditor
-            self.QLineEditor_default_string('sill','intrusive')
-            self.Help_TextEdit.setText(self.list_of_infos[0])  ## This line is used to printout the help function
-            self.params_function_activator(True)                   ### Activate geology parameters
-            ### Let define the default CRS value
-            self.geolcheck = self.Geology_checkBox.checkState()
-            self.Save_pushButton.clicked.connect(self.save_geol_IdName)
-            #self.Save_pushButton.clicked.connect(partial(self.save_geol_IdName, self.flag))
-            self.CRS_LineEditor.setText(str('epsg:28350'))     ## the default project epsg
-            #RemoveAllLayersExcept(self.GeolButton,self.Geology_checkBox)
-            
-            return
-############################################################################################################
-    ### This function create fault ID Name and for the combobox 4=Dip Direction type* only ['num','alpha'] available
-    ### X,Y .. defined the new position of the QLineEdit and Qlabel position when the Fault Layer is selected
-    def create_fault_IdName(self):
-            #### To desactivate the QpushButton for all the layers so that it can't be used in any other call 
-            self.QPushbutton_functionActivator(False,self.GeolButton,self.StructButton,self.DTMButton)
-            #####
-            p,self.FaultPath       = self.activate_layers(self.sender().text())                                    ## This help select the shapefile
-            if self.FaultButton.objectName()=='FaultButton':
-                self.FaultPath     = self.FaultPath
-            fault_comboHeader      = ['Default Dip*', 'Dip Direction*','Feature*', 'Dip Direction type*', 'Fdipest*', 'Point ID*']
-            self.colNames          = xLayerReader()
-            self.label_mover(fault_comboHeader)
-            self.combo_column_appender(self.colNames,self.FaultButton.objectName())                                        # This code add element in combo items
-            ### Transform
-            DipDirectionConv_colNames =['num','alpha']                                 # Empty label is set for the Header name
-            self.cmbDescriptionLayerIDName.clear()                                     # Clear the Dip Direction Convention* box
-            self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)         # Clear the Dip Direction Convention* box
-            #self.label_replacer(self.fault_comboHeader)                                     # This code changes 1st item of combo box
-            ## The below section transform the label and QLineEditor and move it to X and Y
-            self.QLine_and_Label_mover(320,180,320,200," Enter Fault Text:",self.Sill_Label,self.Sill_LineEditor)
-            self.QLine_and_Label_mover(320,250,320,270," Enter fdipest Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
-            ## The below write the 2 define string into two QLineEditor
-            self.QLineEditor_default_string('Fault','shallow,steep,vertical')
-            self.clear_partially_combo_list(6)
-            self.Help_TextEdit.setText(self.list_of_infos[0])           ## This line is used to printout the help function
-            self.params_function_activator(True)                        ### Activate fault parameters
-            #self.fault_flag=0
-            self.Save_pushButton.clicked.connect(self.save_fault_IdName)
-            ####
-            self.faultcheck= self.Fault_checkBox.checkState()
-            return
-############################################################################################################
-    ### This function create Structure Layer ID Name and for the combobox 4=Dip Direction convention* only ['Strike','Dip Direction'] available
-    ### X,Y .. defined the new position of the QLineEdit and Qlabel position when the Fault Layer is selected
-    def create_struct_IdName(self):
-            #### To desactivate the QpushButton for all the layers so that it can't be used in any other call 
-            self.QPushbutton_functionActivator(False,self.GeolButton,self.FaultButton,self.DTMButton)
-            ####
-            p,self.StructPath      = self.activate_layers(self.sender().text())                                   # This help select the shapefile
-            if self.StructButton.objectName()=='StructButton':
-                self.StructPath    =self.StructPath 
-            struct_comboHeader     = ['Dip*', 'Dip Direction*','Feature*', 'Dip Dir Convention*', 'Overturned Field*', 'Point ID*']
-            self.colNames          = xLayerReader()
-            self.label_mover(struct_comboHeader)
-            self.combo_column_appender(self.colNames,self.StructButton.objectName())
-            ### Transform
-            DipDirectionConv_colNames =['Strike','Dip Direction']                      # Empty label is set for the Header name
-            self.cmbDescriptionLayerIDName.clear()                                     # Clear the Dip Direction Convention* box
-            self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)         # Clear the Dip Direction Convention* box
-            #self.label_replacer(struct_comboHeader)                                     # This code changes 1st item of combo box
-            ## The below section transform the label and QLineEditor and move it to X and Y
-            self.QLine_and_Label_mover(320,180,320,200," Enter bedding Text:",self.Sill_Label,self.Sill_LineEditor)
-            self.QLine_and_Label_mover(320,250,320,270," Enter Overturned Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
-            ## The below write the 2 define string into two QLineEditor
-            self.QLineEditor_default_string('Bed','overturned')
-            self.clear_partially_combo_list(6)
-            self.Help_TextEdit.setText(self.list_of_infos[0])           ## This line is used to printout the help function
-            self.params_function_activator(True)                        ### Activate fault parameters
-            self.Save_pushButton.clicked.connect(self.save_struct_IdName)
-            ####
-            #RemoveAllLayersExcept(self.GeolButton)
-            self.structcheck= self.Structure_checkBox.checkState()
-            return
-#**********************************************************************************************************
-############################################################################################################
-    ###### This function save selected geology Layer ID name from the scrolldown and also entered value from the Qlineeditor
-    def save_geol_IdName(self):  
 
+    
+    def create_geology_idname(self):
+        '''
+        Once Load Geology is released, the function will return Geology IDs which are filled in combobox associated to the layer in Qt framework.
+        '''
+        if self.Structure_checkBox.checkState() == 2 or self.Fault_checkBox.checkState() ==2:
+            self.my_combo_list = combo_list(self)
+            for i in range(10):
+                self.my_combo_list[i].setVisible(True)  
+        self.PlaceHoldercomboBox.setVisible(True)
+        self.PlaceHolderQlineEdit.hide()
+        self.CRS_LineEditor.setVisible(True)                     
+        self.CRS_label.setVisible(True)                          
+        self.QPushbutton_functionActivator(False,self.FaultButton,self.StructButton,self.DTMButton)
+        p,self.GeolPath  = self.activate_layers(self.sender().text())                                    
+        if self.GeolButton.objectName()=='GeolButton':
+            self.GeolPath= self.GeolPath
+        geol_comboHeader = ['Formation*', 'Group*','Supergroup*', 'Description*', 'Fm code*', 'Rocktype 1*','Rocktype 2*','Polygon ID*','Min Age*','Max Age*']
+        label_mover(self,geol_comboHeader)
+        self.colNames    = xlayer_reader()
+        self.combo_column_appender(self.colNames,self.GeolButton.objectName())        
+        qline_and_label_mover(320,210,320,230," Sill Text:",self.Sill_Label,self.Sill_LineEditor)
+        qline_and_label_mover(320,280,320,300," Intrusion Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
+        qlineeditor_default_string(self,'sill','intrusive')
+        self.Help_TextEdit.setText(self.list_of_infos[0])  
+        self.params_function_activator(True)                   
+        self.geolcheck = self.Geology_checkBox.checkState()
+        self.Save_pushButton.clicked.connect(self.save_geol_IdName)
+        self.CRS_LineEditor.setText(str('28350'))     
+        return
+
+
+    def create_fault_idname(self):
+        '''
+        Once Load Fault is released, the function will return Fault IDs which are filled in combobox associated to the layer in Qt framework.
+        For the combobox 4=Dip Direction type* only ['num','alpha'] available.
+        '''
+        self.QPushbutton_functionActivator(False,self.GeolButton,self.StructButton,self.DTMButton)
+        p,self.FaultPath       = self.activate_layers(self.sender().text())                                   
+        if self.FaultButton.objectName()=='FaultButton':
+            self.FaultPath     = self.FaultPath
+        fault_comboHeader      = ['Default Dip*', 'Dip Direction*','Feature*', 'Dip Direction type*', 'Fdipest*', 'Point ID*']
+        self.colNames          = xlayer_reader()
+        label_mover(self,fault_comboHeader)
+        self.combo_column_appender(self.colNames,self.FaultButton.objectName())                                        
+        DipDirectionConv_colNames =['num','alpha']                                 
+        self.cmbDescriptionLayerIDName.clear()                                    
+        self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)         
+        qline_and_label_mover(320,180,320,200," Fault Text:",self.Sill_Label,self.Sill_LineEditor)
+        qline_and_label_mover(320,250,320,270," fdipest Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
+        qlineeditor_default_string(self,'Fault','shallow,steep,vertical')
+        clear_partially_combo_list(self,6,1)                        
+        clear_partially_combo_list(self,6,0)                        
+        self.Help_TextEdit.setText(self.list_of_infos[0])           
+        self.params_function_activator(True)                        
+        self.Save_pushButton.clicked.connect(self.save_fault_IdName)
+        self.faultcheck= self.Fault_checkBox.checkState()
+        return
+
+
+    def create_struct_idname(self):
+        '''
+        Once Load Structure is released, the function will return Structure IDs which are filled in combobox associated to the layer in Qt framework.
+        For the combobox 4=Dip Direction convention* only ['Strike','Dip Direction'] available.
+        '''
+        self.QPushbutton_functionActivator(False,self.GeolButton,self.FaultButton,self.DTMButton)
+        p,self.StructPath      = self.activate_layers(self.sender().text())                                   
+        if self.StructButton.objectName()=='StructButton':
+            self.StructPath    =self.StructPath 
+        struct_comboHeader     = ['Dip*', 'Dip Direction*','Feature*', 'Dip Dir Convention*', 'Overturned Field*', 'Point ID*']
+        self.colNames          = xlayer_reader()
+        label_mover(self,struct_comboHeader)
+        self.combo_column_appender(self.colNames,self.StructButton.objectName())
+        DipDirectionConv_colNames =['Strike','Dip Direction']                      
+        self.cmbDescriptionLayerIDName.clear()                                     
+        self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)                                    
+        qline_and_label_mover(320,180,320,200," Bedding Text:",self.Sill_Label,self.Sill_LineEditor)
+        qline_and_label_mover(320,250,320,270," Overturned Text:",self.Intrusion_Label,self.Intrusion_LineEditor)
+        qlineeditor_default_string(self,'Bed','overturned')
+        clear_partially_combo_list(self,6,1)                        
+        clear_partially_combo_list(self,6,0)             
+        self.Help_TextEdit.setText(self.list_of_infos[0])           
+        self.params_function_activator(True)                        
+        self.Save_pushButton.clicked.connect(self.save_struct_IdName)
+        self.structcheck= self.Structure_checkBox.checkState()
+        return
+
+    def save_geol_IdName(self):  
+        '''
+        This function save selected geology Layer ID name from the cmbbox and Qlineeditor.
+        Then delete crs value and hide crs label.
+        '''
         self.crs_value     = self.CRS_LineEditor.text()
         self.geol_data,self.data_geol=self.SaveLayer_multipleTimes(self.geolcheck,self.Geology_checkBox,self.GeolButton,self.FaultButton,self.StructButton,self.DTMButton,
                                                                   self.Sill_LineEditor,self.Intrusion_LineEditor,self.Help_TextEdit,'sill','intrusive',self.list_of_params,self.geol_param_list)
-        self.CRS_LineEditor.hide()                    ### delete crs value
-        self.CRS_label.hide()                         ### hide crs label
-        #print('geol data is {}'.format(self.geol_data))
-        self.Save_pushButton.clicked.disconnect()        ### To disconnect the pushbutton
+        self.CRS_LineEditor.hide()                      
+        self.CRS_label.hide()                            
+        self.PlaceHoldercomboBox.hide()                  
+        self.Save_pushButton.clicked.disconnect()        
+       # print('geol param: ',self.data_geol)
         return 
-############################################################################################################
-###### This function save fault Layer ID name into a scroll down search
-    def save_fault_IdName(self):
 
+
+    def save_fault_IdName(self):
+        '''
+        This function save selected fault Layer ID name from the cmbbox and Qlineeditor.
+        '''
+        
         self.fault_data,self.data_fault=self.SaveLayer_multipleTimes(self.faultcheck,self.Fault_checkBox,self.FaultButton,self.GeolButton,self.StructButton,self.DTMButton,
                                                                      self.Sill_LineEditor,self.Intrusion_LineEditor,self.Help_TextEdit,
                                                                     'Fault','shallow,steep,vertical',self.list_of_params,self.fault_param_list)
                                                                   
-        #print('fault data is {}'.format(self.fault_data))
-        self.Save_pushButton.clicked.disconnect()  
+        self.Save_pushButton.clicked.disconnect() 
+        self.PlaceHolderQlineEdit.hide() 
+       # print('fault param: ',self.data_fault)
         return
-############################################################################################################
-###### This function save Structure/Point Layer ID name into a scroll down search
+
+
     def save_struct_IdName(self):
-
-
+        '''
+        This function save selected Structure Point Layer ID name from the cmbbox and Qlineeditor.
+        '''
         self.struct_data,self.data_struct=self.SaveLayer_multipleTimes(self.structcheck,self.Structure_checkBox,self.StructButton,self.FaultButton,self.GeolButton,
                                                                      self.DTMButton,self.Sill_LineEditor,self.Intrusion_LineEditor,self.Help_TextEdit,
                                                                      'Bed','overturned',self.list_of_params,self.struct_param_list)
-                                                                    
-        #print('struct data is {}'.format(self.struct_data))
+        self.PlaceHolderQlineEdit.hide()                                                               
         self.Save_pushButton.clicked.disconnect()
+      #  print('Struct param: ',self.data_struct)
         return 
-############################################################################################################
-###### This function save Structure/Point Layer ID name into a scroll down search
+
+
     def SaveLayer_multipleTimes(self,BcheckVal,CheckStatus,
                                 label_ref1,label_ref2,label_ref3,label_ref4,
                                 Sill_LineEditor,Intrusion_LineEditor,HelpText,
                                 default1,default2,
                                 list_of_params, ongoing_params):
-        Istristate         =CheckStatus.isTristate()     ### chechStatus is the checkbox self.label i.e self.Structure_checkBox
+        '''
+        This function create a pass to run load multiple times a layer from the same Qpushbutton.
+        Once save layer is pushed, chechStatus is the checkbox self.label i.e self.Structure_checkBox,
+        then save selected Layer ID name from the cmbbox and Qlineeditor. 
+        In case, the second attempt if the checkbox is activated,it creates a 3rd state to the checbox, then save the layer params.
+        '''
+        Istristate         =CheckStatus.isTristate()  
         checkstate         =BcheckVal
-        self.my_combo_list = self.combo_list()
+        self.my_combo_list = combo_list(self)
         if checkstate==BcheckVal and Istristate ==False: 
-            CheckStatus.setTristate(True)               ### This line of code set a 3rd state to the checbox
+            CheckStatus.setTristate(True)               
         else:
             pass
-        ###################
+        
         if checkstate==BcheckVal and Istristate ==False or checkstate==BcheckVal:
             self.outputdata =self.Layer_value_selector(label_ref1,Sill_LineEditor,Intrusion_LineEditor,HelpText,default1,default2)  
-        ###################  
+          
         self.QPushbutton_functionActivator(True,label_ref2,label_ref3,label_ref4)
-        self.outputparamsdata =self.params_function_value_save(ongoing_params)                  ## save the structure params
-        list_of_params[1].clear()                                          ## clear combobox
+        self.outputparamsdata =self.params_function_value_save(ongoing_params,label_ref1)                 
+        list_of_params[1].clear()                                          
         self.params_function_activator(False)
         CheckStatus.setChecked(True)
         return self.outputdata, self.outputparamsdata
-############################################################################################################
-    ##### This function save activate QPushButton
+
+
     def QPushbutton_functionActivator(self, status, label1, label2, label3):
-            label1.setEnabled(status) 
-            label2.setEnabled(status) 
-            label3.setEnabled(status)
-############################################################################################################
-    ##### This function save activate QCheckBox
+        '''
+        This function set the status of a QPushbutton either to False/True. 
+        '''
+        label1.setEnabled(status) 
+        label2.setEnabled(status) 
+        label3.setEnabled(status)
+
+
     def QCheckBox_functionActivator(self, status, label1, label2, label3):
-            label1.setChecked(status) 
-            label2.setChecked(status) 
-            label3.setChecked(status)
-            #print('les 3 autres status:', True)
-############################################################################################################
-    ##### This function save the DTM path and check the box once the file is selected.
+        '''
+        This function check/uncheck the various Qchekbox, define in label1,2,3. 
+        '''
+        label1.setChecked(status) 
+        label2.setChecked(status) 
+        label3.setChecked(status)
+
+
     def saveDTM_path(self):
-        self.Aus_checkBox.setEnabled(False)## disable the AUS button
-        p,self.DTMPath=self.activate_layers()                                   # This help select the shapefile
+        '''
+        Once DTM push is activated, this function save the DTM path and check the Qcheckbox.
+        Then, hide AUS Qcheckbox.
+        '''
+        self.Aus_checkBox.setEnabled(False)  
+        p,self.DTMPath=self.activate_layers(self.sender().text())                                   
         if self.DTMButton.objectName()=='DTMButton':
                 self.DTMPath=self.DTMPath 
         DTM_filename  = str(self.DTMPath)
         self.DTM_checkBox.setChecked(True)
-############################################################################################################
-    ##### This function save the DTM path and check the box once the file is selected.
+
+
     def saveAUS_path(self):
-        self.DTMButton.setEnabled(False)     ## disable DTM layer
-        self.DTM_checkBox.setEnabled(False)  ## disable DTM check box
-        
-        p,self.DTMPath=self.activate_layers()                                   # This help select the shapefile
+        '''
+        Once AUS is activated, should let you select the AUS DTM,  
+        and then after selection, this will disable Load DTM and checkbox.
+        '''
+        self.DTMButton.setEnabled(False)     
+        self.DTM_checkBox.setEnabled(False)  
+        p,self.DTMPath=self.activate_layers(self.sender().text())                                   
         if self.Aus_checkBox.objectName()=='Aus_checkBox':
                 self.DTMPath=self.DTMPath 
         DTM_filename  = str(self.DTMPath)
-        self.Aus_checkBox.setEnabled(True)## Enable AUS button after selecting the required data.
-############################################################################################################
-    ###### This function is a purpose built to move both Qlabel and QLineEditor
-    def QLine_and_Label_mover(self,X1,Y1,X2,Y2,msg1,label1,label2):
-            self.dynamic_label(msg1,label1,X1,Y1)
-            self.dynamic_QEditor(label2,X2,Y2)
-#**********************************************************************************************************
-############################################################################################################
+        self.Aus_checkBox.setEnabled(True)
+
+
     def createJson(self):
+        '''
+        Once <Create Json> is released, with all data captured it will format it and save it into json file.
+        some data are coded, i.e: Min deposit and fold_data.
+        '''
         try:
-            ### Hard coded data for Min deposit and fold_data
-            self.fold_data      = ['feature', 'Fold axial trace', 'type','syncline']
-            self.mindeposit_data = ['site_code', 'short_name', 'site_type_','target_com','site_commo','commodity_','infrastructure']
-            ###
-            self.default_data     = [ 'volc', '0','No_col','500']  # Hard Coded default data
+            self.fold_data        = ['feature', 'Fold axial trace', 'type','syncline']
+            self.mindeposit_data  = ['site_code', 'short_name', 'site_type_','target_com','site_commo','commodity_','infrastructure']
+            self.default_data     = [ 'volc', '0','No_col','500']  
             self.Alldata          = self.geol_data+self.fault_data+self.struct_data+self.mindeposit_data+self.fold_data+self.default_data      
-            geol_listKeys         = ['c','g','g2','ds','u','r1','r2','o-geol','min','max','sill','intrusive'] #o-geol is initially o
+            geol_listKeys         = ['c','g','g2','ds','u','r1','r2','o-geol','min','max','sill','intrusive'] 
             fault_listKeys        = ['fdip','fdipdir','f','fdipdir_flag','fdipest','o','fault','fdipest_vals']    
-            struct_listKeys       = ['d','dd','sf','otype','bo','gi','bedding','btype'] #o-struct is initially o 
+            struct_listKeys       = ['d','dd','sf','otype','bo','gi','bedding','btype'] 
             mindeposit_lisKeys    = ['msc','msn','mst','mtc','mscm','mcom','minf']
             fold_lisKeys          = ['ff','fold','t','syn']
-            default_keys          = ['volcanic','fdipnull','n','deposit_dist']  # Hard Coded default data keys
+            default_keys          = ['volcanic','fdipnull','n','deposit_dist']  
             AllKeys               = geol_listKeys + fault_listKeys + struct_listKeys + mindeposit_lisKeys + fold_lisKeys + default_keys
             formation_data        = dict(zip(AllKeys, self.Alldata))
             #print('formation data:', formation_data)
             json_path             = self.SearchFolder.text()
-            ###
             try:
                create_json_file(json_path,formation_data)
                QMessageBox.about(self,"STATUS", "*****json file created*****")
@@ -334,40 +349,27 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         except:
             buttonReply = QMessageBox.question(self, 'OOPS Load all Layers', "Do you want to continue?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
         return
-############################################################################################################
-     ###### This function change combo title based on the layer name
-    def label_replacer(self,list_of_element):
-        for id,replace_elt in enumerate(self.combo_list()):
-            replace_elt.setItemText(0, list_of_element[id])
-        return
-############################################################################################################
-     ###### This function append combo elt to all layer name
+
+
+
     def combo_column_appender(self,col_list,layerobject):
-        for id,elt2 in enumerate(self.combo_list()):
+        '''
+        This function append combo elt to all layer name. 
+        '''
+
+        for id,elt2 in enumerate(combo_list(self)):
             col_list, self.list_of_infos=create_orientation_help(col_list,id,layerobject)
             if not self.cmbFormationLayerIDName:
                 elt2.addItems(col_list)
             else:
                 elt2.addItems(col_list)  
         return
-############################################################################################################
-     ###### This function return a list combo elt 
-    def combo_list(self):
-        self.my_combo_list =[self.cmbFormationLayerIDName,self.cmbGroupLayerIDName,
-                            self.cmbSupergroupLayerIDName,self.cmbDescriptionLayerIDName,
-                            self.cmbFmLayerIDName, self.cmbRocktype1LayerIDName,
-                            self.cmbRocktype2LayerIDName,self.cmbPointIDLayerIDName,
-                            self.cmbMinAgeLayerIDName,self.cmbMaxAgeLayerIDName] 
-        return self.my_combo_list
-############################################################################################################
-     ###### This function send default string into QLineEditor
-    def QLineEditor_default_string(self,string1, string2):
-        self.Sill_LineEditor.setText(str(string1))
-        self.Intrusion_LineEditor.setText(str(string2))
+ 
 
-############################################################################################################
     def default_input(self, value,input_tag):
-        # This function return either empty QLineEdit string or the value typed in.
+        '''
+        This function return either empty QLineEdit string or the value typed in.
+        '''
         value     =value
         input_tag =input_tag
         if not value:
@@ -375,57 +377,22 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             self.val =value
         return self.val
-############################################################################################################
-    ## This function create dynamic label which is then move into X1,Y1 position
-    def dynamic_label(self, Sill_Msg,label1,X1,Y1): #Sill_Msg is the message title on top op your QLineEditor
-        label =label1                               #label1 is the name of the qt designer feature i.e self.Combobox, 
-        label.setText(Sill_Msg)                     # X1,Y1 is the (x,y) coordinate of the feature into the MainWindow
-        label.setFont(QFont("Sanserif",10))
-        label1.move(X1,Y1)
-############################################################################################################
-    ## This function create dynamic QEditor which is then move into X1,Y1 position
-    def dynamic_QEditor(self,label1,X1,Y1):
-        label =label1
-        label1.move(X1,Y1)
-############################################################################################################
-    ## This function clear the label associated with ComboBox 
-    def clear_all_label(self):
-        for i in range(len(self.label_list)):
-            self.label_list[i].clear()
-        self.Intrusion_Label.clear()
-        self.Sill_Label.clear()
-############################################################################################################
-    ## This function create dynamic label which is then move into X1,Y1*idx position
-    def label_mover(self,geol_comboHeader):
-            self.label_list       = [self.moving_Label_1,self.moving_Label_2,self.moving_Label_3,self.moving_Label_4,self.moving_Label_5,self.moving_Label_6,self.moving_Label_7,self.moving_Label_8,self.moving_Label_9,self.moving_Label_10]
-            for idx, combo_elt in enumerate(geol_comboHeader):
-                      self.label_list[idx].setText(geol_comboHeader[idx])                     # X1,Y1 is the (x,y) coordinate of the feature into the MainWindow
-                      self.label_list[idx].setFont(QFont("Sanserif",10))
-                      if idx==len(geol_comboHeader)-1:
-                        break
-############################################################################################################
-###### This function save Structure/Point Layer ID name into a scroll down search
-    def clear_combo_list(self):
-        self.my_combo_list =[self.cmbFormationLayerIDName,self.cmbGroupLayerIDName,
-                    self.cmbSupergroupLayerIDName,self.cmbDescriptionLayerIDName,
-                    self.cmbFmLayerIDName, self.cmbRocktype1LayerIDName,
-                    self.cmbRocktype2LayerIDName,self.cmbPointIDLayerIDName,
-                    self.cmbMinAgeLayerIDName,self.cmbMaxAgeLayerIDName]
-        for i in range(10):
-            self.my_combo_list[i].clear    
-        return 
 
-############################################################################################################
-###### This function generate a list of layer columns names with its search content QLineEdit
+
     def Layer_value_selector(self,label_ref,Sill_LineEditor,Intrusion_LineEditor,HelpText,default1,default2):
+        '''
+        Once save is activated, this function return all data snap from the Qt framework.
+        Note that these data are only associated to combobox and two extra labels.
+        '''
         data          = []           
         for i in range(10):
+            self.my_combo_list=combo_list(self)
             data.append(self.my_combo_list[i].currentText())
             self.my_combo_list[i].clear()
         self.Sill_input      = Sill_LineEditor.text()
         self.Intrusion_input = Intrusion_LineEditor.text()
-        self.a_sill          = self.default_input(self.Sill_input, str(default1))    #'sill')
-        self.a_intrusion     = self.default_input(self.Intrusion_input,str(default1)) #''intrusive')
+        self.a_sill          = self.default_input(self.Sill_input, str(default1))    
+        self.a_intrusion     = self.default_input(self.Intrusion_input,str(default2)) 
         if label_ref.objectName()=='GeolButton':
            self.output_data  = data+[str(self.a_sill),str(self.a_intrusion)]
         elif label_ref.objectName()=='FaultButton':
@@ -434,21 +401,22 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.output_data = data[0:6]+[str(self.a_sill),str(self.a_intrusion)] 
         else:
             pass
-        Sill_LineEditor.clear()                                                 ## This line clear the QLineEditor text box
-        Intrusion_LineEditor.clear()                                            ## This line clear the QLineEditor text box
-        self.clear_all_label()
+        Sill_LineEditor.clear()                                                 
+        Intrusion_LineEditor.clear()                                           
+        clear_all_label(self)
         HelpText.clear()
         return self.output_data
-############################################################################################################
-###### This function save clear partially combobox among the all 
-    def clear_partially_combo_list(self,break_id):
-            for i in reversed(range(10)):  
-                self.my_combo_list[i].clear() 
-                if i==break_id:
-                   break
-############################################################################################################
-###### This function activate parameters for the geology layer 
+
+
     def params_function_activator(self,flag):
+        '''
+        This function is used once the load layer QPushbutton is activated.
+        It automatically populate the default parameters for any layer along with their associated label. 
+        However, the geologist can replace or typed their true value.
+        :list_of_params: Qt features to append default values, they are either QCombobox or Qlineeditor.
+        :flag: True to generate the params or False to hide the feature in Qt framework.
+        '''
+        
         self.list_of_params = [self.Geol1_LineEditor,self.Geol2_LineEditor,self.Geol3_LineEditor,
                               self.Geol4_LineEditor, self.Geol5_LineEditor,self.Geol6_LineEditor,
                               self.Geol7_LineEditor,self.Geol8_LineEditor,self.Geol9_LineEditor]
@@ -472,67 +440,88 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     self.list_of_labels[i].setText(str(self.geol_param_list[i])) 
                     if i==1: 
                         self.list_of_params[i].addItems(['domes','saucers','pendant'] ) 
+                    elif i==2:
+                       self.list_of_params[i].hide()
+                       self.PlaceHoldercomboBox.addItems(['0','1'] )                        
                     else:
                         self.list_of_labels[i].setText(str(self.geol_param_list[i])) 
                         self.list_of_params[i].setText(str(values[i]))
-            ####
             elif self.FaultButton.isEnabled():
+                self.PlaceHolderQlineEdit.setVisible(True)
                 self.fault_param_list =['Fault dip','Decimate', 'Min length']
                 default_values   =['90','5','5000']
                 for i in range(len(self.fault_param_list)): 
                     self.list_of_params[i].setVisible(True)
                     self.list_of_labels[i].setVisible(True)
                     self.list_of_labels[i].setText(str(self.fault_param_list[i]))
+                    self.PlaceHoldercomboBox.hide()
                     if i==1: 
-                        self.list_of_params[i].addItems([default_values[i]] ) 
+                        self.list_of_params[i] = self.PlaceHolderQlineEdit
+                        self.list_of_params[i].setText(str(default_values[i]))
                     else:
                         self.list_of_params[i].setText(str(default_values[i]))
-            ####
             elif self.StructButton.isEnabled():
+                self.PlaceHolderQlineEdit.setVisible(True)
                 self.struct_param_list =['misorientation','Decimate']
                 default_values   =['30','5']
                 for i in range(len(self.struct_param_list)): 
                     self.list_of_params[i].setVisible(True) 
                     self.list_of_labels[i].setVisible(True)
                     self.list_of_labels[i].setText(str(self.struct_param_list[i]))
+                    self.PlaceHoldercomboBox.hide()
                     if i==1: 
-                        self.list_of_params[i].addItems([default_values[i]] ) 
-                    else:
-                        self.list_of_params[i].setText(str(default_values[i]))
+                       self.list_of_params[i]= self.PlaceHolderQlineEdit
+                    self.list_of_params[i].setText(str(default_values[i]))
             else:
                 pass
         return
 
-############################################################################################################
-###### This function sav layer params, here we mean the defaul paramaeters for each layer
-    def params_function_value_save(self,list_of_elt):
-        self.data_param =[]
-        for i in range(len(list_of_elt)): 
-            if i==1: 
-                self.data_param.append(self.list_of_params[i].currentText())
-            else:
-                self.data_param.append(self.list_of_params[i].text())
-        return self.data_param
-############################################################################################################
-    def save_your_python_file(self):
-        print('geol data is {}'.format(self.geol_data))
 
-        print('self.crs_value::', self.crs_value,self.data_fault,self.data_struct,self.data_geol)
+    def params_function_value_save(self,list_of_elt,flag):
+        '''
+        This function is used once the load layer QPushbutton is activated.
+        It returns default parameters for any layer that was populated using params_function_activator function.
+        :list_of_elt: The param list of features,
+        :flag: represent the Qt feature activated  i.e. flag=self.FaultButton
+        '''
+        self.data_param =[]
+        if flag.objectName()=='GeolButton': 
+            for i in range(len(list_of_elt)):
+                if i==1 or i==2:   
+                    if i==2:
+                            self.list_of_params[i]=self.PlaceHoldercomboBox
+                    self.data_param.append(self.list_of_params[i].currentText())    
+                else:
+                    self.data_param.append(self.list_of_params[i].text())
+        if flag.objectName()=='FaultButton': 
+            for i in range(len(list_of_elt)):
+                self.data_param.append(self.list_of_params[i].text())  
+        elif flag.objectName()=='StructButton':
+            for i in range(len(list_of_elt)):
+                self.data_param.append(self.list_of_params[i].text())     
+        else:
+            pass        
+        return self.data_param
+
+
+    def save_your_python_file(self):
+        '''
+        Once Save Py Script is released, this function will createa python script with all the below parameters.
+        Then, return the following confirmation msg:  python file created*
+        '''
         self.filepath     = self.SearchFolder.text()
-        self.pyfilename   = 'Run_test'                     ##  This is the name of the python file created
+        self.pyfilename   = 'Run_test'                     
         geology_filename  = str(self.GeolPath)
         fault_filename    = str(self.FaultPath)
         fold_filename     = str(self.FaultPath)
         structure_filename= str(self.StructPath)
         dtm_filename      = 'http://services.ga.gov.au/gis/services/DEM_SRTM_1Second_over_Bathymetry_Topography/MapServer/WCSServer?'
         metadata_filename = str(self.filepath)+'/'+'data.json'
-        #mindep_filename   = 'http://13.211.217.129:8080/geoserver/loop/wms?service=WMS&version=1.1.0&request=GetMap&layers=loop%3Anull_mindeps'
         mindep_filename   = 'http://13.211.217.129:8080/geoserver/loop/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=loop:null_mindeps&bbox={BBOX_STR}&srs=EPSG:28350&outputFormat=shape-zip'
         overwrite         = 'true'
         verbose_level     = 'VerboseLevel.NONE'
         project_path      = str(self.filepath)
-        working_projection= str(self.crs_value)#'epsg:28350'
-        # ### Here we define data2 paramas
+        working_projection= int(self.crs_value)
         out_dir           =str(self.filepath)
         bbox_3d           ={'minx': 520000, 'miny': 7490000, 'maxx': 550000, 'maxy': 7510000, 'base': -3200, 'top': 1200}
         run_flags         ={'aus': True, 
@@ -566,22 +555,15 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                            'roi_clip_path': ''}
         proj_crs          =str(self.crs_value)  
         clut_path         =''
-        ### data4 is used to copy a specific file <map2loop.qgz> into a project path <proj.config.project_path+/>
         qgz_file          ='./source_data/map2loop.qgz'
         qgz_split_name    = qgz_file.split('/')[-1]
-        #### Module_Import is the import module variable
         Module_Import     = 'from map2loop.project import Project \nfrom map2loop.m2l_enums import VerboseLevel \nimport shutil\n'
-        #### project_config create a project with defined specific params
         project_config    = 'proj = Project(\n''                geology_filename='+"'"+str(geology_filename)+"'"+',''\n                fault_filename='+"'"+str(fault_filename)+"'"+',\n                fold_filename='+"'"+str(fold_filename)+"'"+',\n                structure_filename='+"'"+str(structure_filename)+"'"+',\n                mindep_filename='+"'"+str(mindep_filename)+"'"+',\n                dtm_filename='+"'"+str(dtm_filename)+"'"+',\n                metadata_filename='+"'"+str(metadata_filename)+"'"+',\n                overwrite='"'"+str(overwrite)+"'"+',\n                verbose_level=VerboseLevel.NONE'+',\n                project_path='+"'"+str(project_path)+"'"+',\n                working_projection='+"'"+str(working_projection)+"'"+',\n                )'
-        #### project_update update the configuration files 
         project_update    = '\n \nproj.update_config(\n                    out_dir='+"'"+str(out_dir)+"'"+',\n                    bbox_3d='+str(bbox_3d)+',\n                    run_flags='+str(run_flags)+',\n                    proj_crs='+"'"+ str(proj_crs)+"'"+',\n                    clut_path='+"'"+str(clut_path)+"'"+',\n                )'
-        #### project_run is used to run the proj
         project_run       = '\n \nproj.run()\n' 
-        #### copy file qgz file into a different location
         proj_dest         = 'proj.config.project_path'
         qgz_move          = '/'+ str(qgz_split_name)
         copyqgzfile       = 'shutil.copyfile('+"'"+ str(qgz_file)+"'"+ ', '+str(proj_dest)+"+'"+ str(qgz_move)+"'"+ ')'
-        #######################
         create_a_python_file(self.filepath,self.pyfilename,Module_Import,project_config,project_update,project_run,copyqgzfile)
         QMessageBox.about(self,"STATUS", "*****python file created*****")
 ###############################################################################################################################################################################
