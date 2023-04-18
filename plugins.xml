@@ -1,0 +1,22 @@
+<plugins>
+<pyqgis_plugin name="qgis-loopplugin" version="0.0.1">
+<description>
+<![CDATA[ Loop QGIS module supporting map2loop and one day the rest of Loop. ]]>
+</description>
+<version>0.0.1</version>
+<qgis_minimum_version>3.22</qgis_minimum_version>
+<homepage>https://loop3d.github.io/</homepage>
+<file_name>qgis-loopplugin.zip</file_name>
+<icon>icon.png</icon>
+<author_name>Michel Nzikou</author_name>
+<download_url>http://13.211.217.129/qgis-loopplugin.zip</download_url>
+<uploaded_by>Loop</uploaded_by>
+<create_date>2022-11-02</create_date>
+<update_date>2022-11-02</update_date>
+<experimental>True</experimental>
+<deprecated>False</deprecated>
+<tracker>https://github.com/Loop3D/qgis-loopplugin/issues</tracker>
+<repository>https://github.com/Loop3D/qgis-loopplugin</repository>
+<tags>3D,geology</tags>
+</pyqgis_plugin>
+</plugins>
