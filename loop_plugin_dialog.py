@@ -905,38 +905,33 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     hide_dtm_feature(self,0)
             except:
                 hide_all_combo_list(self,1)
-            
             layer_path   =[]
             ###
-
             for key, key2 in  zip(self.layers_object.keys(),self.layer_dict.keys()):
                 if str(key)        == str(self.selected_dtm):
                     self.dict_value=  self.layers_object[key]     
                     path           =  self.layer_dict[key2]
                     layer_path.append(path)
-                    try:
-                        if type(self.dtm_layer).__name__=='QgsRasterLayer' and self.dtm_layer.name()==str(self.selected_dtm):   
-                            pass
-                    except:
-
+                    #try:
+                    if type(self.dtm_layer).__name__=='QgsRasterLayer' and self.dtm_layer.name()==str(self.selected_dtm):   
+                        pass
+                    else:
+                    #except:
                         colname = [ax.name() for ax in self.dict_value.fields() ]
                         self.type_of_layer = self.dict_value.wkbType()
                         load_data_when_qgis_is_choosen(self,colname,self.sender_name,self.dict_value)
-
-
-                        hide_dtm_feature(self,0)
-                        if self.sender().objectName()=='Ok_pushButton' and self.sender_name=='GeolButton':
-                            self.GeolPath   = layer_path[0] 
-                            activate_config_file(self)
-                        elif self.sender().objectName()=='Ok_pushButton'and self.sender_name=='FaultButton':
-                            self.FaultPath  = layer_path[0] 
-                            activate_config_file(self)
-                        elif self.sender().objectName()=='Ok_pushButton' and self.sender_name=='StructButton':
-                            self.StructPath = layer_path[0]
-                            activate_config_file(self)        
-                        else:
-                            pass
-            
+                    hide_dtm_feature(self,0)
+                    if self.sender().objectName()=='Ok_pushButton' and self.sender_name=='GeolButton':
+                        self.GeolPath   = layer_path[0] 
+                        activate_config_file(self)
+                    elif self.sender().objectName()=='Ok_pushButton'and self.sender_name=='FaultButton':
+                        self.FaultPath  = layer_path[0] 
+                        activate_config_file(self)
+                    elif self.sender().objectName()=='Ok_pushButton' and self.sender_name=='StructButton':
+                        self.StructPath = layer_path[0]
+                        activate_config_file(self)        
+                    else:
+                        pass 
         except:
             pass 
         return
