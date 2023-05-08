@@ -98,7 +98,7 @@ def welcoming_image(self,flag):
         self.ImageLabel.setScaledContents(False)
     else:
         self.ImageLabel.hide()
-
+  
 
 def save_activator(self,flag):
     '''
@@ -149,7 +149,7 @@ def list_all_layers(self):
     elif self.sender().objectName()=='Qgis_checkBox'and self.FaultButton.isEnabled()==True and self.sender_name=='FaultButton':
         names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==5]
     elif self.sender().objectName()=='Qgis_checkBox'and self.StructButton.isEnabled()==True and self.sender_name=='StructButton':
-        names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==1]
+        names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==1 or a.wkbType()==1001 ]
     elif self.sender().objectName()=='Qgis_checkBox'and self.DTMButton.isEnabled()==True:# and self.sender_name=='StructButton':
         names = [a.name() for a in layers_list if type(a).__name__=='QgsRasterLayer']   
     else:
