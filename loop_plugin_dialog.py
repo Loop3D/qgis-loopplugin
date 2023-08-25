@@ -165,10 +165,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # 3- run map2loop and push back the result
         '''
         ##
-        
-        # self.CRS_LineEditor.setText(str('epsg:28350')) 
-        # self.crs_value     = self.CRS_LineEditor.text()
-        ##
         username           = str(self.map2loop_2.text())
         hostname           = str(self.map2loop_1.text())
         port_number        = str(self.map2loop_3.text())
