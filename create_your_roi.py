@@ -13,8 +13,7 @@ from pathlib import Path
 from qgis.core import *
 import processing
 from qgis.utils import iface
-from qgis.core import QgsProject,QgsVectorLayer,QgsVectorFileWriter,QgsCoordinateTransformContext
-from qgis.core import QgsRasterLayer
+from qgis.core import QgsRasterLayer,QgsProject,QgsVectorLayer,QgsVectorFileWriter,QgsCoordinateTransformContext
 from PyQt5.QtWidgets import QMessageBox
 from .feature_import import welcoming_image
 #set input and output file names
@@ -36,17 +35,17 @@ def create_scratch_layer(self,flag):
     
     ## While this section deal with layer available in Qgis layer panel
     layers_list     = QgsProject.instance().mapLayers().values()
-    layer_paths     = [layer.dataProvider().dataSourceUri() for layer in layers_list]
-    part_path       = Path(str(layer_paths[0])).parts
-    self.clip_path  = 'C:/'+"/".join(part_path [1:len(part_path )-1])
-
+    layer_in_use    =[lay for lay in layers_list]
+    name_out,join_path,out_path=extract_layer_path(layer_in_use[0])
+    self.clip_path  = join_path
+    # print('self.clip_path 2:', self.clip_path)
     new_layer =  QgsVectorLayer(str(layer_type), 'temp_layer' , "memory")  #
     QgsProject.instance().addMapLayers([new_layer])
     new_layer.startEditing()
     options = QgsVectorFileWriter.SaveVectorOptions()
     options.driverName = "ESRI Shapefile"
     QMessageBox.about(self,"ROI selection", "Draw your ROI")
-    self.draw_your_ROI=True #QMessageBox.question(self,"ROI selection", "Draw your ROI",QMessageBox.Yes)
+    self.draw_your_ROI=True 
     set_your_clip(self,140, 140)
     
     return self.clip_path
@@ -86,13 +85,7 @@ def select_your_roi_region(self,new_layer,flag):
     '''
     try:
         # This section define path for input and output layers 
-        out        = new_layer.dataProvider().dataSourceUri()
-        out        = Path(str(out)).parts
-        name_out   = out[-1].split('.')[0]
-        extension  = out[-1].split('.')[-1]
-        join_path  = out[0]+"/".join(out[1:len(out)-1])
-        out_path   = join_path+'/'+name_out+'_clip.'+str(extension)
-
+        name_out,join_path,out_path=extract_layer_path(new_layer)
         # Create a layer for the feature and add to the project
         layers     = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
         roi_layer  = [a for a in layers if a.name()=='roi'][0]
@@ -175,12 +168,7 @@ def clipping_dtm(layer_1, layer_2):
     '''
     This function is used to clip dtm layer from drawn or existing roi layer
     '''  
-    out        = layer_1.dataProvider().dataSourceUri()
-    out        = Path(str(out)).parts
-    name_out   = out[-1].split('.')[0]
-    extension  = out[-1].split('.')[-1]
-    join_path  = out[0]+"/".join(out[1:len(out)-1])
-    out_path   = join_path+'/'+name_out+'_clip.'+str(extension) 
+    name_out,join_path,out_path=extract_layer_path(layer_1)
     layer_clip =processing.run("gdal:cliprasterbymasklayer", {'INPUT':layer_1,'MASK':layer_2,'SOURCE_CRS':None,
                                                                   'TARGET_CRS':None,'TARGET_EXTENT':None,'NODATA':None,
                                                                   'ALPHA_BAND':False,'CROP_TO_CUTLINE':False,'KEEP_RESOLUTION':True,
@@ -213,3 +201,17 @@ def set_your_clip(self,x,y):
     self.Ok_ClipLayer.move(x,y)
     return
 
+
+
+def extract_layer_path(layer):
+    '''
+    This function extract the layer path and create the clipped layer with _clip at the end.
+    # layer : The layer to be clipped 
+    '''
+    out        = layer.dataProvider().dataSourceUri()
+    out        = Path(str(out)).parts
+    name_out   = out[-1].split('.')[0]
+    extension  = out[-1].split('.')[-1]
+    join_path  = out[0]+"/".join(out[1:len(out)-1])
+    out_path   = join_path+'/'+name_out+'_clip.'+str(extension) 
+    return name_out,join_path,out_path

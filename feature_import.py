@@ -98,7 +98,7 @@ def welcoming_image(self,flag):
         self.ImageLabel.setScaledContents(False)
     else:
         self.ImageLabel.hide()
-  
+
 
 def save_activator(self,flag):
     '''
@@ -134,7 +134,9 @@ def icon_indexer(self):
         #label.setLayoutDirection(QtCore.Qt.RightToLeft) #RightToLeft #LeftToRight
         #self.GeolButton.setIcon(QtGui.QIcon(str(Image_path)+'geol.png'))
  
- 
+
+
+
 def list_all_layers(self):
     '''
     This function return the list of layers availaible in qgis-layer panel
@@ -144,17 +146,19 @@ def list_all_layers(self):
     paths       = [name.dataProvider().dataSourceUri() for name in layers_list]
     self.layer_dict = dict(zip(names,paths))
     self.objec_dict = dict(zip(names,layers_list))
+
     if self.sender().objectName()=='Qgis_checkBox'and self.GeolButton.isEnabled()==True and self.sender_name=='GeolButton':
         names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==6]
     elif self.sender().objectName()=='Qgis_checkBox'and self.FaultButton.isEnabled()==True and self.sender_name=='FaultButton':
         names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==5]
-    elif self.sender().objectName()=='Qgis_checkBox'and self.StructButton.isEnabled()==True and self.sender_name=='StructButton':
-        names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==1 or a.wkbType()==1001 ]
-    elif self.sender().objectName()=='Qgis_checkBox'and self.DTMButton.isEnabled()==True:# and self.sender_name=='StructButton':
+    elif self.sender().objectName()=='Qgis_checkBox'and self.StructButton.isEnabled()==True and self.sender_name=='StructButton': 
+        names = [a.name() for a in layers_list if type(a).__name__=='QgsVectorLayer' and a.wkbType()==1 or type(a).__name__=='QgsVectorLayer' and a.wkbType()==1001]
+    elif self.sender().objectName()=='Qgis_checkBox'and self.DTMButton.isEnabled()==True:
         names = [a.name() for a in layers_list if type(a).__name__=='QgsRasterLayer']   
     else:
         pass
-    self.Qgis_comboBox.addItems(names) 
+ 
+    self.Qgis_comboBox.addItems(names)
     return self.layer_dict,self.objec_dict 
 
 

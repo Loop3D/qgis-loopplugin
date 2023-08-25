@@ -377,7 +377,7 @@
     <rect>
      <x>10</x>
      <y>31</y>
-     <width>921</width>
+     <width>971</width>
      <height>24</height>
     </rect>
    </property>
@@ -1168,6 +1168,139 @@
      <widget class="QLineEdit" name="CRS_LineEditor"/>
     </item>
    </layout>
+  </widget>
+  <widget class="QProgressBar" name="map2loop_progressBar">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>640</y>
+     <width>531</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>0</number>
+   </property>
+  </widget>
+  <widget class="QWidget" name="formLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>430</y>
+     <width>241</width>
+     <height>103</height>
+    </rect>
+   </property>
+   <layout class="QFormLayout" name="formLayout">
+    <item row="0" column="0">
+     <widget class="QLabel" name="map2loop_label_2">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>username</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="map2loop_2"/>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="map2loop_label_1">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>hostname</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="map2loop_1"/>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="map2loop_label_3">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>port number</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="map2loop_3"/>
+    </item>
+    <item row="3" column="1">
+     <widget class="QPushButton" name="map2loop_Ok_pushButton">
+      <property name="text">
+       <string>OK</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QPushButton" name="ShapeButton">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>600</y>
+     <width>89</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>ShapeFile</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="GeojsonButton">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>630</y>
+     <width>89</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>GeojsonFile</string>
+   </property>
+  </widget>
+  <widget class="QTextBrowser" name="map2loop_log_TextEdit">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>530</y>
+     <width>111</width>
+     <height>91</height>
+    </rect>
+   </property>
   </widget>
  </widget>
  <resources/>

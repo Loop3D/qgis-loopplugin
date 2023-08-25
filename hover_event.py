@@ -36,12 +36,14 @@ def show_my_info(self):
                self.GeolButton, self.FaultButton,self.StructButton,self.DTMButton,
                self.OrientationButton,self.ROIButton,self.DrillholesButton, self.SectionsButton, self.FoldButton, self.ConfigButton,
                self.Saveconfig_pushButton,self.Map2Loop_Button,self.LoopStructural_Button,self.btnPush,
-               self.Qgis_checkBox,self.Aus_checkBox,self.File_checkBox,self.Http_checkBox,self.Qgis_comboBox,self.Ok_pushButton]
+               self.Qgis_checkBox,self.Aus_checkBox,self.File_checkBox,self.Http_checkBox,self.Qgis_comboBox,self.Ok_pushButton,
+               self.map2loop_label_2,self.map2loop_label_1,self.map2loop_label_3,self.map2loop_Ok_pushButton]
    button_text =['Project directory icon','Project directory name','To be filled by the project directory path','Click to select your project directory',
                'Click to load your Geology layer','click to load your Fault layer','click to load your Structure Point layer','Click to load your DTM or Map layer',
                'Orientation layer','To create a Region of interest','To load Drill Hole data','Section layer','To load your Fold layer','To create your configuration parameters',
                'To create and save the configuration file in the project directory','To run map2loop','To run loopstructural','To close the plugin',
-               'To select layers from QGIS panel','To select layer from GA webserver','To select a layer from your pc','To select layer from your own web address','To be filled with available layers on QGIS panel','To save selected layer in combobox above']
+               'To select layers from QGIS panel','To select layer from GA webserver','To select a layer from your pc','To select layer from your own web address','To be filled with available layers on QGIS panel','To save selected layer in combobox above',
+               'Your name or computer name','remote server ip address', 'default port: Enter 8000','Click OK to execute map2loop']
    label_tool_tip(button_list,button_text)
 
 def layer_show_tooltype(self,sender):

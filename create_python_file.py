@@ -5,7 +5,7 @@ import os
 import pathlib
 from PyQt5.QtWidgets import  QMessageBox
 
-def create_a_python_file(self,file_path,pyfilename, Module_Import,data1,data2,data3,data4):
+def save_a_python_file(self,file_path,pyfilename, Module_Import,data1,data2,data3,data4):
     '''
     This function  create a python file whith the below data:
     file_path  --> this is the file path
@@ -15,7 +15,8 @@ def create_a_python_file(self,file_path,pyfilename, Module_Import,data1,data2,da
     data3      --> is the project run command
     data4      --> is use to copy qgz file into a different directory
     '''
-   
+   # Process data folder
+    file_path= str(file_path)+'/process_source_data'
     try:
         file = open(str(file_path+'/'+pyfilename)+'.py', 'w')
         file.write(Module_Import+data1+data2+data3+data4)

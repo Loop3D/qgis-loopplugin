@@ -192,10 +192,9 @@ def geol_sorter(data,id):
              col_of_interest2.append([a for a in data[majorkey].values() if type(a) is list][0]) 
         elif majorkey=='timing':
             if '_params' in str(data[majorkey].keys()):
-                col_of_interest3=[a for a in data[majorkey].values() if type(a) is list]
+                col_of_interest3=[a for a in data[majorkey].values() if type(a) is list ]
         col_of_interest=col_of_interest1+col_of_interest2+col_of_interest3
-    for idx in range(9):
+    for idx in range(10):
         if id==idx:
            col_of_interest=col_of_interest[idx]
-
     return col_of_interest

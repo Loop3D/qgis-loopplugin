@@ -21,17 +21,19 @@
  *                                                                         *
  ***************************************************************************/
 """
-import os
+import os,glob
 import sys
+from qgis.utils import iface
 from qgis.PyQt import uic,QtWidgets
 from qgis.core import QgsProject
 from PyQt5.QtWidgets import  QFileDialog, QMessageBox
 from PyQt5.QtCore import*
 from PyQt5.QtGui import*
-
-import os.path
+import subprocess
+from pathlib import Path
+import os.path,shutil,time
 from .load_vectors import shape_file_loader,xlayer_reader,create_json_file
-from .create_python_file import create_a_python_file,find_relative_path
+from .create_python_file import save_a_python_file,find_relative_path
 from .help_function import sort_layer_param
 from .feature_import import qpush_desactivator,label_mover,qline_and_label_mover,qlineeditor_default_string,welcoming_image,save_activator,icon_indexer,list_all_layers,activate_loader_checkbox,activate_config_file,reset_all_features,set_to_tristate,reset_after_run
 from .clear_features import clear_all_label,clear_partially_combo_list,combo_list,hide_all_combo_list,hide_dtm_feature,reset_qgis_cbox,hide_http,disabled_qgis_chkbox,retry_function
@@ -39,6 +41,8 @@ from .layer_parameter_extractor import load_data_when_qgis_is_choosen,three_push
 from .hover_event import show_my_info,layer_show_tooltype
 from .create_your_roi import create_scratch_layer,select_your_roi_region,saving_your_roi,set_your_clip
 from .feature_import import welcoming_image,list_all_layers,update_file_path
+from .save_to_shp_and_geojson import create_strip_shapefile,create_geojson_file
+from .run_map2loop import hide_map2loop_features,run_client
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'loop_plugin_dialog_base.ui'))
@@ -57,13 +61,14 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
         hide_all_combo_list(self,0), welcoming_image(self,1), hide_dtm_feature(self,0),hide_http(self,0)
         #
-        
+        # hide map2loop qlineeditor and label
+        self.map2loop_qline_list = [self.map2loop_label_1,self.map2loop_label_2,self.map2loop_label_3,self.map2loop_Ok_pushButton]
+        self.map2loop_label_list = [self.map2loop_1,self.map2loop_2,self.map2loop_3,self.map2loop_Ok_pushButton]
+        hide_map2loop_features(self.map2loop_label_list,self.map2loop_qline_list,False)
+     
+
         self.CRS_LineEditor.setText(str('epsg:28350')) 
         self.crs_value     = self.CRS_LineEditor.text()
-        #print('before the update: ',self.crs_value)
-        #print(self.sender().text())
-  
-       
 
         self.SearchFolder.setEnabled(False)
         self.params_function_activator(False) 
@@ -79,7 +84,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.DTMButton.clicked.connect(self.save_dtm_path)
         self.Saveconfig_pushButton.clicked.connect(self.save_config_file)   
         self.ROIButton.clicked.connect(self.save_roi_layer) 
-        #self.Map2Loop_Button.clicked.connect(self.run_map2loop_module) 
+        #self.Test_Button.clicked.connect(self.run_map2loop_module) 
+        #self.Test_Button.hide()
+        self.Map2Loop_Button.clicked.connect(self.run_map2loop_module) 
         #self.LoopStructural_Button.clicked.connect(self.run_loopstructural_module) 
         '''
         Enable button
@@ -98,6 +105,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.FoldButton.setEnabled(False)
         self.ConfigButton.setEnabled(False)
         self.Saveconfig_pushButton.setEnabled(False)
+
         layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers()]
         if not layers:
             self.ROIButton.setEnabled(False)
@@ -116,13 +124,74 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.LoopStructural_Button.setEnabled(False)
         self.Map2Loop_Button.setEnabled(False)
 
+        self.ShapeButton.hide()
+        self.GeojsonButton.hide()
         self.tableWidget.hide()
         self.PlaceHoldercomboBox.hide()
         self.PlaceHolderQlineEdit.hide()
+        self.map2loop_log_TextEdit.hide()
+        self.map2loop_progressBar.hide()                  ### hide progressBar
         #self.CRS_LineEditor.hide()                       ### delete crs value
         #self.CRS_label.hide()                            ### hide crs label
         self.Ok_ClipLayer.hide()
         show_my_info(self)
+
+
+    def run_map2loop_module(self):
+        '''
+        Transfert data into the remote server
+        '''
+        # disable map2loop and 
+        self.Map2Loop_Button.setEnabled(False)
+        self.LoopStructural_Button.setEnabled(False)
+        # unhide map2loop qlineeditor and label
+        map2loop_msg    = QMessageBox.question(self, 'Execution channel', "Where to execute map2loop? \n \n Yes:--> To the server.  \n \n No:--> To your local computer.", QMessageBox.Yes|QMessageBox.No )
+        if map2loop_msg == QMessageBox.Yes:
+            hide_map2loop_features(self.map2loop_label_list,self.map2loop_qline_list,True)
+            self.map2loop_2.setText('Enter your name here')
+            self.map2loop_1.setText('130.95.198.44')
+            self.map2loop_3.setText(str(8000))
+            self.map2loop_Ok_pushButton.clicked.connect(self.run_the_remote_service)
+        else:
+            QMessageBox.about(self,"Run Map2Loop on your PC ", "\n \n"+" Is your PC ready for map2loop calculatios? Update coming soon")
+
+
+
+    def run_the_remote_service(self):
+        '''
+        This function run the modelling calculation on the server,
+        # 1- Activate the server API
+        # 2- Send the data to the server
+        # 3- run map2loop and push back the result
+        '''
+        ##
+        # self.map2loop_2.setText('Enter your name here')
+        # self.map2loop_1.setText('130.95.198.44')
+        # self.map2loop_3.setText(str(8000))
+        
+        # self.CRS_LineEditor.setText(str('epsg:28350')) 
+        # self.crs_value     = self.CRS_LineEditor.text()
+        ##
+        username           = str(self.map2loop_2.text())
+        hostname           = str(self.map2loop_1.text())
+        port_number        = str(self.map2loop_3.text())
+        docker_config      = self.docker_config_file
+        # hide the map2loop details
+        hide_map2loop_features(self.map2loop_label_list,self.map2loop_qline_list,False) 
+        data_folder             = str(self.first_parent_folder)#str(self.SearchFolder.text())
+
+       # Check if websocket module exist:
+        try:
+            import websockets
+            print('websockets is available')
+        except:
+            subprocess.run('pip install websockets')
+            print('websockets is not available')
+
+        run_client(self,data_folder,hostname,username,port_number,docker_config)
+        return
+
+
 
 
     def save_roi_layer(self):
@@ -144,7 +213,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             create_scratch_layer(self,0)
 
         else:
-            self.your_own_roi= True #QMessageBox.question(self,"Loading ROI","Load your region of interest now", QMessageBox.Yes) 
+            self.your_own_roi= True 
             self.No_flag  =True
             self.activate_layers(self.sender().text())
             self.Ok_ClipLayer.setVisible(True)
@@ -234,10 +303,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 pass
         except:
             pass  
-        self.All_names=[str(l)+'_clip' for l in layer_name]    
-            # else:
-            #     self.close() 
-        #print('list of all clipped names: {}'.format(self.All_names))    
+        self.All_names=[str(l)+'_clip' for l in layer_name]     
         return
 
 
@@ -309,9 +375,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.my_combo_list = combo_list(self)
             for i in range(10):
                 self.my_combo_list[i].setVisible(True)  
-        self.PlaceHolderQlineEdit.hide()
-        # self.CRS_LineEditor.setVisible(True)                     
-        # self.CRS_label.setVisible(True)                          
+        self.PlaceHolderQlineEdit.hide()                          
         p,self.GeolPath  = self.activate_layers(self.sender().text())                                    
         if self.GeolButton.objectName()=='GeolButton':
             self.GeolPath= self.GeolPath
@@ -417,8 +481,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     else:
                         self.data_geol.append(self.list_of_params[i].text())
                     self.list_of_params[i].clear()
-                # print(' geol cbbox_data:: ',self.geol_data)
-                # print(' geol param_data:: ',self.data_geol)
                 self.Geology_checkBox.setChecked(True)
                 self.GeolButton.setEnabled(False)
                 self.tableWidget.hide()
@@ -434,8 +496,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     
                     self.data_fault.append(self.list_of_params[i].text()) 
                     self.list_of_params[i].clear()
-                # print(' fault cbbox_data:: ',self.fault_data)
-                # print(' fault param_data:: ',self.data_fault)
                 self.Fault_checkBox.setChecked(True)
                 self.FaultButton.setEnabled(False)
                 self.tableWidget.hide()
@@ -450,8 +510,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 for i in range(len(self.list_of_params[0:2])):
                     self.data_struct.append(self.list_of_params[i].text())
                     self.list_of_params[i].clear() 
-                # print(' struct cbbox_data:: ',self.struct_data)
-                # print(' struct param_data:: ',self.data_struct)
                 self.Structure_checkBox.setChecked(True)
                 self.StructButton.setEnabled(False)
                 self.tableWidget.hide()
@@ -767,7 +825,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     self.File_checkBox.disconnect()
             elif self.sender().objectName()=='Qgis_checkBox' and self.GeolButton.isEnabled()==True and self.sender_name=='GeolButton':
                 geol_flag.append(self.sender().objectName())
-                
                 hide_all_combo_list(self,0)
                 hide_dtm_feature(self,5)
                 self.layer_dict,self.layers_object=list_all_layers(self)
@@ -898,39 +955,41 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.dtm_layer     = [a for a in layers_list if type(a).__name__=='QgsRasterLayer'][0]
             except: 
                 pass
-            self.selected_dtm =self.Qgis_comboBox.currentText()  
-            
+            self.selected_dtm =self.Qgis_comboBox.currentText()         
             try:
                 if self.sender_name=='ROIButton' or self.clip_signal=='Ok_ClipLayer':
                     hide_dtm_feature(self,0)
             except:
                 hide_all_combo_list(self,1)
-            layer_path   =[]
+            layer_path             = []
+            ###
             for key, key2 in  zip(self.layers_object.keys(),self.layer_dict.keys()):
                 if str(key)        == str(self.selected_dtm):
-                    self.dict_value=  self.layers_object[key]     
+                    self.dict_value=  self.layers_object[key]
                     path           =  self.layer_dict[key2]
                     layer_path.append(path)
                     try:
-                       if type(self.dtm_layer).__name__=='QgsRasterLayer' and self.dtm_layer.name()==str(self.selected_dtm):   
-                           pass
+                        if type(self.dtm_layer).__name__=='QgsRasterLayer' and self.dtm_layer.name()==str(self.selected_dtm):
+                            pass
+                        else:     
+                    #except:
+                            colname            = [ax.name() for ax in self.dict_value.fields() ]
+                            self.type_of_layer = self.dict_value.wkbType()
+                            load_data_when_qgis_is_choosen(self,colname,self.sender_name,self.dict_value)
                     except:
-                        colname = [ax.name() for ax in self.dict_value.fields() ]
-                        self.type_of_layer = self.dict_value.wkbType()
-                        load_data_when_qgis_is_choosen(self,colname,self.sender_name,self.dict_value)
-                        
+                        pass
                     hide_dtm_feature(self,0)
-                    if self.sender().objectName()=='Ok_pushButton' and self.sender_name=='GeolButton':
-                        self.GeolPath   = layer_path[0] 
+                    if self.sender().objectName() =='Ok_pushButton' and self.sender_name=='GeolButton':
+                        self.GeolPath             = layer_path[0] 
                         activate_config_file(self)
                     elif self.sender().objectName()=='Ok_pushButton'and self.sender_name=='FaultButton':
-                        self.FaultPath  = layer_path[0] 
+                        self.FaultPath             = layer_path[0] 
                         activate_config_file(self)
                     elif self.sender().objectName()=='Ok_pushButton' and self.sender_name=='StructButton':
-                        self.StructPath = layer_path[0]
+                        self.StructPath            = layer_path[0]
                         activate_config_file(self)        
-                    else:
-                        pass 
+                    else:   
+                        pass
         except:
             pass 
         return
@@ -976,6 +1035,51 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             return QMessageBox.about(self,"Upgrade", "* Upgrade coming soon *")
 
 
+    def select_data_clicked(self):
+        '''
+        Select your data type to be saved.
+        '''
+        self.ShapeButton.hide()
+        self.GeojsonButton.hide()
+        if self.sender().objectName()=='ShapeButton':
+            #Keep all file except geojson one
+            for file in self.file_to_keep:
+                if '.geojson' in str(file).lower():
+                    os.remove(file)
+        else:
+            # Keep only geojson and tif files.
+            for file in self.file_to_keep:
+                if '.geojson' in str(file) or '.tif' in str(file).lower() or '.json' in str(file).lower() :
+                    pass
+                else:
+                    os.remove(file) 
+
+        try:
+            config_message       = QMessageBox.about(self,"Configuration Status", "* Processed Data Created *")
+            if config_message    ==None:
+                continue_msg     = QMessageBox.question(self, 'App status', "Do you want to continue?", QMessageBox.Yes|QMessageBox.Retry|QMessageBox.No )
+                if continue_msg  == QMessageBox.Yes:
+                    QMessageBox.about(self,"Upgrade", "* Enable map2loop and loopstructural*")
+                    self.LoopStructural_Button.setEnabled(True)
+                    self.Map2Loop_Button.setEnabled(True)
+                    self.Saveconfig_pushButton.setEnabled(False)
+                elif continue_msg== QMessageBox.Retry: 
+                    self.retryButton.append(self.sender().objectName())
+                    QMessageBox.about(self,"Reset status", "* Reset all push button*") 
+                    self.Saveconfig_pushButton.setEnabled(False)
+                    reset_all_features(self)
+                    self.DTMButton.setEnabled(False)
+                elif continue_msg== QMessageBox.No:
+                    self.close()
+                else:
+                    pass
+            else:
+                pass
+        except:
+                pass
+
+
+
     def save_config_file(self):
         '''
         Once <Create config file> is released, with all data captured, this is saved into json file and also a project file is created as a python file
@@ -986,7 +1090,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.fold_data        = ['feature', 'Fold axial trace', 'type','syncline']
             self.mindeposit_data  = ['site_code', 'short_name', 'site_type_','target_com','site_commo','commodity_','infrastructure']
             self.default_data     = [ 'volc', '0','No_col','500']  
-            self.Alldata          = self.geol_data+self.fault_data+self.struct_data+self.mindeposit_data+self.fold_data+self.default_data      
+            self.Alldata          = self.geol_data+self.fault_data+self.struct_data+self.mindeposit_data+self.fold_data+self.default_data 
             geol_listKeys         = ['c','g','g2','ds','u','r1','r2','o-geol','min','max','sill','intrusive'] 
             fault_listKeys        = ['fdip','fdipdir','f','fdipdir_flag','fdipest','o','ftype','fault','fdipest_vals']  
             struct_listKeys       = ['d','dd','sf','otype','bo','gi','bedding','btype'] 
@@ -997,30 +1101,60 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             formation_data        = dict(zip(AllKeys, self.Alldata))
             #print('formation_data: ', formation_data)
             json_path             = str(self.SearchFolder.text())
-            self.retryButton      =[]
+            
+            # list of data to strip 
+            list_to_strip         = [self.geol_data,self.fault_data,self.struct_data] 
+            list_of_file          = [self.GeolPath, self.FaultPath,self.StructPath]
+
+            # check if directory exist, if not create one to save new shp and geojson files 
+            parent_n                   = Path(json_path)
+            self.first_parent_folder   = parent_n.parents[0]
+            #print(json_path,first_parent_folder)
+            process_source_data   = str(self.first_parent_folder)+'/process_source_data'
+            process_output_data   = str(self.first_parent_folder)+'/output_data'
+            list_new_directory    = [process_source_data,process_output_data]
+
+             # Check if output_data or source_data folder exist?
+            for dir in list_new_directory:
+                if not os.path.isdir(dir):
+                    os.makedirs(dir) 
+            # check if dtm was locally loaded, then copy it into /stripshapefile or /geojson push
             try:
-                create_json_file(json_path,formation_data)
-                self.save_your_python_file(str(json_path))
-                config_message       = QMessageBox.about(self,"Configuration Status", "* File created *")
-                if config_message    ==None:
-                    continue_msg     = QMessageBox.question(self, 'App status', "Do you want to continue?", QMessageBox.Yes|QMessageBox.Retry|QMessageBox.No )
-                    if continue_msg  == QMessageBox.Yes:
-                        QMessageBox.about(self,"Upgrade", "* Enable map2loop and loopstructural*")
-                        self.LoopStructural_Button.setEnabled(True)
-                        self.Map2Loop_Button.setEnabled(True)
-                        self.Saveconfig_pushButton.setEnabled(False)
-                    elif continue_msg== QMessageBox.Retry: 
-                        self.retryButton.append(self.sender().objectName())
-                        QMessageBox.about(self,"Reset status", "* Reset all push button*") 
-                        self.Saveconfig_pushButton.setEnabled(False)
-                        reset_all_features(self)
-                        self.DTMButton.setEnabled(False)
-                    elif continue_msg== QMessageBox.No:
-                        self.close()
-                    else:
-                        pass
-                else:
-                    pass
+              if self.sender_name == 'DTMButton' and self.dtm=='File_checkBox' or self.sender_name == 'DTMButton' and self.dtm=='Qgis_checkBox':
+                  shutil.copy(self.DTM_filename, process_source_data)
+            except:
+                pass
+
+            for file, field_to_keep in zip(list_of_file,list_to_strip):
+                find_the_layer_name = str(file).rpartition('/') 
+                filename = find_the_layer_name[2].split('.')[0] 
+                # create new strip shapefile
+                strip_file=create_strip_shapefile(file,field_to_keep,filename,process_source_data)
+                # create the geojson file associated with the above shapefile
+                create_geojson_file(strip_file,filename,process_source_data)
+            
+            self.file_to_keep= glob.glob(str(process_source_data)+'/*')
+            QMessageBox.about(self, 'Data Creation', "Data type selection?")
+
+            self.retryButton      =[]
+            try: 
+
+               # Select either shapefile or geojson file
+                self.ShapeButton.setVisible(True)
+                self.GeojsonButton.setVisible(True)
+                #self.ShapeButton.move(250,250)
+                #self.GeojsonButton.move(250,300)
+                self.ShapeButton.setGeometry(250,250,500, 25)
+                self.GeojsonButton.setGeometry(250,300,500, 25)
+                self.ShapeButton.clicked.connect(self.select_data_clicked)
+                self.GeojsonButton.clicked.connect(self.select_data_clicked)
+
+                #create_json_file(json_path,formation_data)
+                create_json_file(self.first_parent_folder,formation_data)
+                # Let's create the docker configuration and save the python file for local use
+                #self.docker_config_file=self.save_your_python_file(str(json_path))
+                self.docker_config_file=self.save_your_python_file(str(self.first_parent_folder))
+
             except:
                 Layerbutton = QMessageBox.question(self, 'OOPS Path Not Selected', "Do you want to continue?", QMessageBox.Yes | QMessageBox.No)
                 if Layerbutton== QMessageBox.No:
@@ -1198,46 +1332,33 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         Then, return the following confirmation msg:  python file created*
         '''
         self.filepath   = str(source_path)
-        #print('source path: ',self.filepath)
-        self.pyfilename     = 'Run_test'        
+        self.pyfilename     = 'Run_test'       
         try: 
             if self.roi_status=='ROIButton':
-                geology_filename= update_file_path(find_relative_path(self, self.geol,self.GeolPath),self.All_names)
-                #print('Updated geol filename: ',geology_filename )
-                fault_filename= update_file_path(find_relative_path(self, self.fault,self.FaultPath),self.All_names)
-                #print('Updated fault filename: ',fault_filename )
-                structure_filename= update_file_path(find_relative_path(self, self.struct,self.StructPath),self.All_names)
-                #print('Updated Struct filename: ',structure_filename )
-                fold_filename    = update_file_path(find_relative_path(self, self.fault,self.FaultPath),self.All_names) 
+                geology_filename   = update_file_path(find_relative_path(self, self.geol,self.GeolPath),self.All_names)
+                fault_filename     = update_file_path(find_relative_path(self, self.fault,self.FaultPath),self.All_names)
+                structure_filename = update_file_path(find_relative_path(self, self.struct,self.StructPath),self.All_names)
+                fold_filename      = update_file_path(find_relative_path(self, self.fault,self.FaultPath),self.All_names) 
                 if self.dtm=='File_checkbox' or self.dtm=='Qgis_checkBox' or self.dtm=='Http_checkBox': 
-                    dtm_filename= update_file_path(find_relative_path(self,self.dtm ,self.DTM_filename),self.All_names)
-                    #print('Updated dtm_filename: ', dtm_filename)
+                    dtm_filename   = update_file_path(find_relative_path(self,self.dtm ,self.DTM_filename),self.All_names)
                 else:
                     # This is kept to GA value
                     dtm_filename=find_relative_path(self,self.dtm ,self.DTM_filename) 
                 
         except:
-            geology_filename= find_relative_path(self, self.geol,self.GeolPath)
-            #print('geol filename: ',geology_filename )
+            geology_filename  = find_relative_path(self, self.geol,self.GeolPath)
             fault_filename    = find_relative_path(self, self.fault,self.FaultPath)
-            #print('fault filename: ',fault_filename )
             structure_filename= find_relative_path(self, self.struct,self.StructPath)
-            #print('Struct filename: ',structure_filename )
-            dtm_filename=find_relative_path(self,self.dtm ,self.DTM_filename)
-            #print('dtm_filename: ', dtm_filename)
-            fold_filename    = find_relative_path(self, self.fault,self.FaultPath)
-            #print('fold filename: ',fault_filename )
+            dtm_filename      = find_relative_path(self,self.dtm ,self.DTM_filename)
+            fold_filename     = find_relative_path(self, self.fault,self.FaultPath)
 
         metadata_filename   = '.\\'+'data.json'
-        #print('metadata_filename:', metadata_filename)
         mindep_filename     = 'http://13.211.217.129:8080/geoserver/loop/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=loop:null_mindeps&bbox={BBOX_STR}&srs=EPSG:28350&outputFormat=shape-zip'
         overwrite           = 'true'
         verbose_level       = 'VerboseLevel.NONE'
         project_path        ='..\\'+"/".join(str(source_path).split('/')[-1:])
-        #print('project path: ', project_path)
         working_projection  = str(self.crs_value)
         out_dir             = project_path
-        #print('out_dir: ', out_dir)
         bbox_3d             ={'minx': 520000, 'miny': 7490000, 'maxx': 550000, 'maxy': 7510000, 'base': -3200, 'top': 1200}
         run_flags           ={'aus': True, 
                             'close_dip': -999.0, 
@@ -1279,8 +1400,39 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         proj_dest           = 'proj.config.project_path'
         qgz_move            = '/'+ str(qgz_split_name)
         copyqgzfile         = 'shutil.copyfile('+"'"+ str(qgz_file)+"'"+ ', '+str(proj_dest)+"+'"+ str(qgz_move)+"'"+ ')'
-        create_a_python_file(self,self.filepath,self.pyfilename,Module_Import,project_config,project_update,project_run,copyqgzfile)
-    
-'''
+        save_a_python_file(self,self.filepath,self.pyfilename,Module_Import,project_config,project_update,project_run,copyqgzfile)
+        if self.dtm=='AU' :
+            self.docker_config_file  = {
+                                "bounding_box"         : str(bbox_3d),
+                                "run_flags"            : str(run_flags),
+                                "project_path"         : str(project_path),
+                                "working_projection"   : str(working_projection),
+                                "geology_filename"     : 'server_'+str(Path(self.GeolPath).name),  
+                                "structure_filename"   : 'server_'+str(Path(self.StructPath).name),
+                                "fault_filename"       : 'server_'+str(Path(self.FaultPath).name),
+                                "fold_filename"        : 'server_'+str(Path(self.FaultPath).name),
+                                "metadata_filename"    : 'server_data.json',
+                                "mindep_filename"      : str(mindep_filename),
+                                "dtm_filename"         : 'AU',
+                                "verbose_level"        : "VerboseLevel.NONE"
+                                }
+        else:
+            self.docker_config_file  = {
+                                "bounding_box"         : str(bbox_3d),
+                                "run_flags"            : str(run_flags),
+                                "project_path"         : str(project_path),
+                                "working_projection"   : str(working_projection),
+                                "geology_filename"     : 'server_'+str(Path(self.GeolPath).name),  
+                                "structure_filename"   : 'server_'+str(Path(self.StructPath).name),
+                                "fault_filename"       : 'server_'+str(Path(self.FaultPath).name),
+                                "fold_filename"        : 'server_'+str(Path(self.FaultPath).name),
+                                "metadata_filename"    : 'server_data.json',
+                                "mindep_filename"      : str(mindep_filename),
+                                "dtm_filename"         : 'server_'+str(Path(self.DTM_filename).name),
+                                "verbose_level"        : "VerboseLevel.NONE"
+                                }
+        return self.docker_config_file
+
+'''  
 FIN
 '''
