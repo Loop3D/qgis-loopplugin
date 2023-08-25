@@ -1,0 +1,48 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Loop processor
+qgisMinimumVersion=3.0
+description=This plugin preprocess shapefile inputs to generate python script and json file that are used as input for map2loop
+version=0.6
+author=Michel M. Nzikou / CET - UWA
+email=michel.nzikoumamboukou@uwa.edu.au
+
+about=Allow the user to input various shapefile layers which is then processed to output a json and python script that is used as input to run a Map2Loop job.
+
+tracker=https://github.com/Loop3D/qgis-loopplugin/issues
+repository=https://github.com/Loop3D/qgis-loopplugin
+
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=QGIS, Layers, Attributes, Python, Json
+
+homepage=https://github.com/Loop3D
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
