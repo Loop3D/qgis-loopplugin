@@ -1302,6 +1302,26 @@
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="Reload_btnPush">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>540</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>ReLoad</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections>

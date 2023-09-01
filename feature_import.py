@@ -213,11 +213,6 @@ def reset_all_features(self):
     self.Qgis_comboBox.clear()
     self.Qgis_comboBox.setVisible(False)
     self.Ok_pushButton.setVisible(False)
-    # Main option
-    # self.FaultButton.setEnabled(True)
-    # self.GeolButton.setEnabled(True)
-    # self.StructButton.setEnabled(True)
-    # self.DTMButton.setEnabled(True)
     # Main option checkbox
     self.Geology_checkBox.setChecked(False)
     self.Fault_checkBox.setChecked(False)

@@ -32,6 +32,7 @@ from PyQt5.QtGui import*
 import subprocess
 from pathlib import Path
 import os.path,shutil,time
+from datetime import datetime
 from .load_vectors import shape_file_loader,xlayer_reader,create_json_file
 from .create_python_file import save_a_python_file,find_relative_path
 from .help_function import sort_layer_param
@@ -87,6 +88,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         #self.Test_Button.clicked.connect(self.run_map2loop_module) 
         #self.Test_Button.hide()
         self.Map2Loop_Button.clicked.connect(self.run_map2loop_module) 
+        self.Reload_btnPush.clicked.connect(self.reset_all_pushbutton)
         #self.LoopStructural_Button.clicked.connect(self.run_loopstructural_module) 
         '''
         Enable button
@@ -131,6 +133,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.PlaceHolderQlineEdit.hide()
         self.map2loop_log_TextEdit.hide()
         self.map2loop_progressBar.hide()                  ### hide progressBar
+        self.Reload_btnPush.hide()                        ### Reload PushButton
         #self.CRS_LineEditor.hide()                       ### delete crs value
         #self.CRS_label.hide()                            ### hide crs label
         self.Ok_ClipLayer.hide()
@@ -149,7 +152,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         if map2loop_msg == QMessageBox.Yes:
             hide_map2loop_features(self.map2loop_label_list,self.map2loop_qline_list,True)
             self.map2loop_2.setText('Enter your name here')
-            self.map2loop_1.setText('remote_server_ip_adress_here')
+            self.map2loop_1.setText('remote_machine_ip_adress_here')
             self.map2loop_3.setText(str(8000))
             self.map2loop_Ok_pushButton.clicked.connect(self.run_the_remote_service)
         else:
@@ -454,7 +457,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def  data_updater(self):
         '''
-        This function update the output of the reslting data processing from combobox and qlineeditor as well as all parameters
+        This function update the output of the resulting data processing from combobox and qlineeditor as well as all parameters
         '''
         try:
             if self.sender().objectName() =='FaultButton' and self.sender_name=='GeolButton' or self.sender().objectName()=='StructButton' and self.sender_name=='GeolButton' or self.sender().objectName() =='DTMButton' and self.sender_name=='GeolButton' :
@@ -510,9 +513,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             pass
     
         return
-
-
-
 
 
     def QPushbutton_functionActivator(self, status, label1, label2, label3):
@@ -582,9 +582,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         
         # Update the CRS value
         self.crs_value     = self.CRS_LineEditor.text()
-
         self.crs_funct_to_hide()
         three_push_activator(self,1)
+
         try:
             self.data_updater()
         except:
@@ -634,26 +634,19 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # Update the CRS value
         self.crs_value     = self.CRS_LineEditor.text()
         self.crs_funct_to_hide()
-        
+
         try: 
             self.data_updater()
- 
         except:
             pass
  
 
         self.sender_name = self.sender().objectName()
         self.faultflag   = self.sender_name
-        
     
         self.PlaceHoldercomboBox.hide()
         self.PlaceHolderQlineEdit.hide()
 
-        self.params_function_activator(False)
-        hide_all_combo_list(self,0)
-        clear_all_label(self)
-        
-        
         layer_show_tooltype(self,self.sender_name)
         set_to_tristate(self.Http_checkBox)
         try:
@@ -663,6 +656,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.Ok_pushButton.setEnabled(True)
         except:
             pass
+        
 
         try:
             if self.dtm =='Aus_checkBox':
@@ -671,9 +665,12 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         except:
             pass
         self.Aus_checkBox.setEnabled(False)  
+        
+        hide_all_combo_list(self,0),clear_all_label(self)
+        self.params_function_activator(False)
         hide_dtm_feature(self, 1),welcoming_image(self,2)
-        reset_qgis_cbox(self,2)
-        disabled_qgis_chkbox(self)
+        reset_qgis_cbox(self,2),disabled_qgis_chkbox(self)    
+
         self.File_checkBox.stateChanged.connect(self.select_your_fault_method)
         self.Qgis_checkBox.stateChanged.connect(self.select_your_fault_method)
         self.Http_checkBox.stateChanged.connect(self.select_your_fault_method)
@@ -686,8 +683,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         '''
         # Update the CRS value
         self.crs_value     = self.CRS_LineEditor.text()
-
         self.crs_funct_to_hide()
+        #three_push_activator(self,1)
+
         try:
             self.data_updater()
         except:
@@ -1036,26 +1034,45 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.GeojsonButton.hide()
         if self.sender().objectName()=='ShapeButton':
             #Keep all file except geojson one
-            for file in self.file_to_keep:
-                if '.geojson' in str(file).lower():
-                    os.remove(file)
+            try:
+                for file in self.file_to_keep:
+                    if '.geojson' in str(file).lower():
+                        os.remove(file)
+            except:
+                pass
         else:
             # Keep only geojson and tif files.
-            for file in self.file_to_keep:
-                if '.geojson' in str(file) or '.tif' in str(file).lower() or '.json' in str(file).lower() :
-                    pass
-                else:
-                    os.remove(file) 
+            try:
+                for file in self.file_to_keep:
+                    if '.geojson' in str(file) or '.tif' in str(file).lower() or '.json' in str(file).lower() :
+                        pass
+                    else:
+                        os.remove(file) 
+            except:
+                pass
 
         try:
+        
             config_message       = QMessageBox.about(self,"Configuration Status", "* Processed Data Created *")
             if config_message    ==None:
                 continue_msg     = QMessageBox.question(self, 'App status', "Do you want to continue?", QMessageBox.Yes|QMessageBox.Retry|QMessageBox.No )
-                if continue_msg  == QMessageBox.Yes:
-                    QMessageBox.about(self,"Upgrade", "* Enable map2loop and loopstructural*")
+                if continue_msg  == QMessageBox.Yes :
+                    try:
+                      if self.sender().objectName()=='ShapeButton' and self.reloader=='Reload_btnPush':
+                        self.Saveconfig_pushButton.disconnect()
+                        self.ShapeButton.disconnect()
+                      elif  self.sender().objectName()=='GeojsonButton' and self.reloader=='Reload_btnPush':
+                        self.Saveconfig_pushButton.disconnect()
+                        self.GeojsonButton.disconnect()
+                      else:      
+                        pass    
+                    except:
+                        pass
+                    QMessageBox.about(self,"Server Execution", "* Enable map2loop and loopstructural*")
                     self.LoopStructural_Button.setEnabled(True)
                     self.Map2Loop_Button.setEnabled(True)
                     self.Saveconfig_pushButton.setEnabled(False)
+                    
                 elif continue_msg== QMessageBox.Retry: 
                     self.retryButton.append(self.sender().objectName())
                     QMessageBox.about(self,"Reset status", "* Reset all push button*") 
@@ -1070,8 +1087,20 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 pass
         except:
                 pass
+        
 
-
+    def reset_all_pushbutton(self):
+        ''' 
+        This function is called to clear and reload all features
+        '''
+        #
+        self.reloader=self.sender().objectName()
+        self.Saveconfig_pushButton.setEnabled(False)
+        reset_all_features(self)
+        self.DTMButton.setEnabled(False)
+        self.SearchFolder.clear() 
+        self.map2loop_log_TextEdit.hide()
+        
 
     def save_config_file(self):
         '''
@@ -1101,16 +1130,19 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
             # check if directory exist, if not create one to save new shp and geojson files 
             parent_n                   = Path(json_path)
-            self.first_parent_folder   = parent_n.parents[0]
-            #print(json_path,first_parent_folder)
-            process_source_data   = str(self.first_parent_folder)+'/process_source_data'
-            process_output_data   = str(self.first_parent_folder)+'/output_data'
+            self.first_parent_folder   = Path(json_path) 
+            # Getting the current date and time
+            self.dt_string        = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            #
+            process_source_data   = str(self.first_parent_folder)+'/process_source_data_'+str(self.dt_string)
+            process_output_data   = str(self.first_parent_folder)+'/output_data_'+str(self.dt_string)
             list_new_directory    = [process_source_data,process_output_data]
-
+            self.reset_flag       = list_new_directory
              # Check if output_data or source_data folder exist?
             for dir in list_new_directory:
                 if not os.path.isdir(dir):
                     os.makedirs(dir) 
+ 
             # check if dtm was locally loaded, then copy it into /stripshapefile or /geojson push
             try:
               if self.sender_name == 'DTMButton' and self.dtm=='File_checkBox' or self.sender_name == 'DTMButton' and self.dtm=='Qgis_checkBox':
@@ -1125,28 +1157,25 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 strip_file=create_strip_shapefile(file,field_to_keep,filename,process_source_data)
                 # create the geojson file associated with the above shapefile
                 create_geojson_file(strip_file,filename,process_source_data)
-            
+           
             self.file_to_keep= glob.glob(str(process_source_data)+'/*')
             QMessageBox.about(self, 'Data Creation', "Data type selection?")
 
             self.retryButton      =[]
+
             try: 
 
                # Select either shapefile or geojson file
                 self.ShapeButton.setVisible(True)
                 self.GeojsonButton.setVisible(True)
-                #self.ShapeButton.move(250,250)
-                #self.GeojsonButton.move(250,300)
-                self.ShapeButton.setGeometry(250,250,500, 25)
-                self.GeojsonButton.setGeometry(250,300,500, 25)
+                self.ShapeButton.setGeometry(250,250,400, 25)
+                self.GeojsonButton.setGeometry(250,300,400, 25)
                 self.ShapeButton.clicked.connect(self.select_data_clicked)
                 self.GeojsonButton.clicked.connect(self.select_data_clicked)
-
-                #create_json_file(json_path,formation_data)
-                create_json_file(self.first_parent_folder,formation_data)
-                # Let's create the docker configuration and save the python file for local use
-                #self.docker_config_file=self.save_your_python_file(str(json_path))
-                self.docker_config_file=self.save_your_python_file(str(self.first_parent_folder))
+                
+                #create json file
+                create_json_file(process_source_data,formation_data)
+                self.docker_config_file=self.save_your_python_file(str(process_source_data))
 
             except:
                 Layerbutton = QMessageBox.question(self, 'OOPS Path Not Selected', "Do you want to continue?", QMessageBox.Yes | QMessageBox.No)
