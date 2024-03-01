@@ -55,7 +55,7 @@ def create_json_file(data_path,data):
     #data_path: json file path
     #data: data to be written into the json file
     '''
-    data_path= str(data_path)+'/process_source_data'
+    data_path= str(data_path)
     try:
         to_unicode = unicode
     except NameError:

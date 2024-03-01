@@ -6,6 +6,7 @@ import glob,os
 import time
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QFont
+from .feature_import import reset_all_features
 ##
 
 def run_progressbar(self,i,N,flag,name):
@@ -86,9 +87,9 @@ async def data_uploader(filename,filepath,idx,how_many_file_need_to_be_sent,ip_a
 
 async def map2loop_executor(conf_param,ip_adress,port_number):
 	"""This function is used to execute map2loop within the container
-		   # conf_param : configuration parameters need to execute map2loop
-		   # ip_adress  : host ip address
-		   # port_number: server ip address
+					# conf_param : configuration parameters need to execute map2loop
+					# ip_adress  : host ip address
+					# port_number: server ip address
 	"""
 	uri = "ws://"+str(ip_adress)+":"+str(port_number)
 	async with websockets.connect(uri, ping_interval=None) as socket:
@@ -145,12 +146,12 @@ async def ping(self,ip_adress,port_number):
 		
 
 
-async def map2loop_result_extractor(your_local_dir,server_filename,ip_adress,port_number):
+async def map2loop_result_extractor(your_local_dir,list_server_data,server_filename,ip_adress,port_number):
 	"""This function download data (DOWNLOAD packet to get binary data) from the docker container to your host machine
-		   # data_path       : results output data path within the docker container/server
-		   # server_filename : filename of the result output
-		   # ip_adress       : host ip address
-		   # port_number     : server ip address
+					# data_path       : results output data path within the docker container/server
+					# server_filename : filename of the result output
+					# ip_adress       : host ip address
+					# port_number     : server ip address
 	"""
 	uri = "ws://"+str(ip_adress)+":"+str(port_number)
 	async with websockets.connect(uri) as socket:
@@ -160,7 +161,8 @@ async def map2loop_result_extractor(your_local_dir,server_filename,ip_adress,por
 						"project_id": 1,
 						"function"  : "DOWNLOAD",
 						"params"    : "",
-						"filename"  : str(server_filename)
+						"filename"  : "",
+						"serv_data" : str(list_server_data)
 					}
 
 			await socket.send(json.dumps(package))
@@ -193,14 +195,14 @@ def client_main(self,userID,ip_adress,port_number,config_param,local_data_path):
 			time.sleep(0.05)
 			self.map2loop_log_TextEdit.append('Let the magic happen!! '+ str(ip_adress)+"\n")
 			time.sleep(0.05)
-			list_of_data           = glob.glob(local_data_path+'/process_source_data/*')
-			local_output_data_path = str(local_data_path)+'/output_data/'
+			list_of_data           = glob.glob(local_data_path+'/process_source_data_'+str(self.dt_string)+'/*')
+			local_output_data_path = str(local_data_path)+'/output_data_'+str(self.dt_string)+'/'
 			nbre_pc_data_to_server = len(list_of_data)
 			filename               = []
 			for a in list_of_data:
 				name_file          = os.path.basename(os.path.normpath(a))
 				filename.append(name_file)
-		   
+					
 			idx            =  1                  # Index for file counts
 			outgoing_flag  = 'PC ------> Server' # action to tranfert data from pc to docker
 			self.map2loop_log_TextEdit.append('.............. MODE: '+str(outgoing_flag)+ '.............. '+"\n")
@@ -225,21 +227,25 @@ def client_main(self,userID,ip_adress,port_number,config_param,local_data_path):
 			index                 = 1                   # Index for file counts
 			nbre_server_data_to_pc= len(dictionary)     #  Nbre of result output
 			incoming_flag         = 'Server ------> PC' #  action to tranfert data from docker to your pc
-			#print('Length_of_result: ',Length_of_result)
+			
 			self.map2loop_log_TextEdit.append('.............. MODE: '+str(incoming_flag)+ '.............. '+"\n")
 			for filename, filepath in dictionary.items():
 				run_progressbar(self,index,nbre_server_data_to_pc,incoming_flag,filename)
-				asyncio.new_event_loop().run_until_complete(map2loop_result_extractor(local_output_data_path,str(filename),ip_adress,port_number))
+				asyncio.new_event_loop().run_until_complete(map2loop_result_extractor(local_output_data_path,str(filepath),str(filename),ip_adress,port_number))
 				index+=1
+			self.Reload_btnPush.setVisible(True)
+			
+			
 	
 	except:
 		self.map2loop_log_TextEdit.setVisible(True)
 		network_message = ['OOOPS! OOOPS! OOOPS! Server is down', 'Please email Michel Nzikou : ',' michel.nzikoumamboukou@uwa.edu.au ', 'or Mark Jessel : ', 'mark.jessell@uwa.edu.au' ]
 		for msg in network_message: 
-		  self.map2loop_log_TextEdit.setGeometry(170,150, 750, 300)
-		  self.map2loop_log_TextEdit.append(str(msg)+ "\n")
-		#pass
-		
+					self.map2loop_log_TextEdit.setGeometry(170,150, 750, 300)
+					self.map2loop_log_TextEdit.append(str(msg)+ "\n")
+	
+
+
 	
 if __name__ == "__main__":
 	client_main()

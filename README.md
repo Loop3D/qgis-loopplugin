@@ -15,6 +15,21 @@ For example, we can load a dtm raster, using the following 4 options:
 However, only qgis and file options are active for the other type of layers.
 Once all layers are processed, json file and python script are created and then used to run Map2Loop as well as LoopStructural(Loop project).
 
+## REQUIRED
+Before you download this plugin, please execute the below code on your QGIS Python console.
+
+```bash
+  # Check if websocket module exist:
+  try:
+      import websockets
+      print('websockets is available')
+  except:
+      subprocess.run('pip install websockets')
+      print('websockets is not available')
+```
+If you have websocket installed, it is okay, otherwise, it will install it to your QGIS ENV PATH. 
+Once done, you can follow on how to install loopplugin.
+
 ## How to install **loopplugin**?
   You will need a python package manager, [see here](https://docs.anaconda.com/anaconda/install/index.html)), as well as Python ≥ 3.6.
   You can git clone this plugin from the Loop3D repository with the following link:
@@ -24,7 +39,6 @@ Once all layers are processed, json file and python script are created and then 
   More details about installing qgis plugin can be found here: [https://plugins.qgis.org/](https://plugins.qgis.org/)  
 
 ## How to run **loopplugin**?
-
 
 If the plugin is availaible in QGIS plugin tabs launch it by clicking the Loop icon,
 in case, it is not available, select then Loop Processor from the plugin menu/installed.
@@ -82,11 +96,10 @@ A usage example of the automated results after the geology layer is loaded:*
 ### Create Configuration File(.json and .py)
 
 - After the buttons Geology, Fault, Structure and DTM are all checked and also the Project Directory is defined, 
-  click Save Config File to generate both "data.json" and "Run_test.py" in the newly created folder (process_source_data) on the same level with the Project Directory.
-- Also created at the same level with Project Directory, a new folder called output_data is a placeholder folder that will receive the results of  
-  map2loop once the calculation is completed inside the docker container.
-- The process_source_data contain the newly saved shapefile or geojson containing only the parameters selected during layer processing.
-  These outputs are then used as input for Map2loop or LoopStructural modelling engine . 
+  click Save Config File to generate both "data.json" and "Run_test.py" in the newly created folder (process_source_data_timestamp) inside your Project Directory.
+- Also inside the Project Directory, the output_data_timestamp folder, where the results of map2loop will locally be stored.
+- The process_source_data contain the newly saved shapefile/geojson containing only the parameters selected during layer processing.
+  These outputs are then used as input for Map2loop or LoopStructural modelling engine. 
   
 
 ### ROI (Region Of Interest)
@@ -100,12 +113,13 @@ Once you have loaded your layers, by clicking ROI, the following happen:
  Once you click clipped_your_layer, all the loaded layer should be clipped and add to the panel.
 
 ### RUN Map2Loop
-  In this feature, you have the possibility of running locally or on a server/remote machine your calculations.
+  In this feature, you have the possibility of running locally or on a server your calculations.
   - Before using this feature, you need to clone/download map2loop-server repository and then run the server package (more details on the repository).
     To do so or to turn on the server, open the terminal in the root directory of this repository and run:  
    
   ```bash
    docker compose up --build
+  ```
   
   Since your server is running, you can now process your data and build a map deconstruction, by sending the process data inside the container/server using websocket client. This is done by a single click of the module 'Run map2loop' once activated. 
    
@@ -117,6 +131,7 @@ Once you have loaded your layers, by clicking ROI, the following happen:
 
 ### Future releases:
 
+  * REQUIRED: This will be embedded during plugin installation into the next release.
   * LoopStructural.clicked.connect()
   * LoopUI.clicked.connect()
   * TomoFast.clicked.connect()
