@@ -4,7 +4,6 @@ This function load vector layers into the Qgis framework
 """
 
 import os
-from .m2l_client import m2l_client_main
 from .l2s_client import l2s_client_main
 
 
@@ -36,10 +35,7 @@ def run_client(self, dir, hostname, username, port_number, config_param):
     # port_number : the default port is 8000
     # config_param: the configuration parameters extracted from data processing
     """
-    if self.sender().objectName() == "Map2Loop_Button":
-        m2l_client_main(self, username, hostname, port_number, config_param, dir)
-    else:
-        l2s_client_main(self, username, hostname, port_number, config_param, dir)
+    l2s_client_main(self, username, hostname, port_number, config_param, dir)
     return
 
 

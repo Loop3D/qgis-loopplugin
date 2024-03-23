@@ -34,3 +34,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     #
     from .loop_plugin import Loop_plugin
     return Loop_plugin(iface)
+
+

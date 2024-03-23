@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  loopstructural:
+    
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    # Very important to bind host machine ip with the container network
+    #network_mode: host  # Uncomment this if you are using a different computer
+
+    # Expose your port  
+    ports:
+      - 8888:8888
+    # this is used to help clear caches
+    restart: always
+    tty: true
+    command: python3 server/server.py --ip='0.0.0.0'
+
+    # create name volumes in your container
+    volumes:
+      - output_data:/var/lib/docker/volumes/output_data/_data
+
+
+volumes:
+  output_data:
