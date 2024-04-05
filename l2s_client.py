@@ -6,6 +6,8 @@ import glob, os
 import time
 from PyQt5.QtGui import QFont
 
+# from .scripts.loop.l2s_data_push import push_data_to_local
+
 ##
 
 
@@ -179,8 +181,49 @@ async def map2loop_result_extractor(
             dir = str(your_local_dir) + str(server_filename)
             with open(str(dir), mode="wb") as file:
                 file.write(data)
+                print("did it go through?", resp["msg"])
         except Exception as e:
             print("server filename: ", server_filename, e)
+
+
+async def receive_html(
+    file_size, port_number, hostname, your_local_dir, server_filename, list_server_data
+):
+    """
+    This function deals with large 3D model save as in HTML format
+    file_size       : the size of the data (i.e: 10MB, 1GB for )
+    port_number     : host machine availaible port number
+    hostname        : host machine ip address
+    server_filename : server model name
+    your_local_dir  : loopstructural result output folder
+    list_server_data: list of output data
+    """
+
+    uri = "ws://" + str(hostname) + ":" + str(port_number)
+    async with websockets.connect(uri, max_size=file_size) as socket:
+
+        package = {
+            "client_id": 1,
+            "project_id": 1,
+            "function": "DOWNLOAD",
+            "params": "",
+            "filename": "",
+            "serv_data": str(list_server_data),
+        }
+
+        await socket.send(json.dumps(package))
+        # Receive HTML data from the server
+        html_data = await socket.recv()
+        file_path = str(your_local_dir) + str(server_filename)
+        # filename
+        file_name = server_filename
+        # Write HTML data to a file
+        with open(file_path, "w") as file:
+            file.write(html_data)
+            print(
+                f"STATUS: Downloaded <<{file_name}>> to local folder - JOB: completed"
+            )
+    return
 
 
 def l2s_client_main(
@@ -207,9 +250,6 @@ def l2s_client_main(
             self.map2loop_log_TextEdit.append(
                 "Let the magic happen!! " + str(ip_adress) + "\n"
             )
-            # self.processed_data = (
-            #     local_data_path + "/process_source_data_" + str(self.dt_string))
-
             time.sleep(0.05)
             list_of_data = glob.glob(
                 local_data_path
@@ -281,21 +321,39 @@ def l2s_client_main(
             self.map2loop_log_TextEdit.append(
                 ".............. MODE: " + str(incoming_flag) + ".............. " + "\n"
             )
-            # print("filepath::::", filepath)
+
             for filename, filepath in dictionary.items():
-                print(filename, "......", filepath)
                 run_progressbar(
                     self, index, nbre_server_data_to_pc, incoming_flag, filename
                 )
-                asyncio.new_event_loop().run_until_complete(
-                    map2loop_result_extractor(
-                        local_output_data_path,
-                        str(filepath),
-                        str(filename),
-                        ip_adress,
-                        port_number,
+                if self.docker_remote_or_local_server_flag == "local server":
+                    pass
+                else:
+                    print(
+                        f"STATUS: Downloading <<{filename}>> from server - JOB: pending"
                     )
-                )
+                    if ".html" in filename:
+                        CUSTOM_MAX_SIZE = 10 * 1024 * 1024  # file_size
+                        asyncio.new_event_loop().run_until_complete(
+                            receive_html(
+                                CUSTOM_MAX_SIZE,
+                                port_number,
+                                ip_adress,
+                                local_output_data_path,
+                                str(filename),
+                                str(filepath),
+                            )
+                        )
+                    else:
+                        asyncio.new_event_loop().run_until_complete(
+                            map2loop_result_extractor(
+                                local_output_data_path,
+                                str(filepath),
+                                str(filename),
+                                ip_adress,
+                                port_number,
+                            )
+                        )
                 index += 1
             self.Reload_btnPush.setVisible(True)
 

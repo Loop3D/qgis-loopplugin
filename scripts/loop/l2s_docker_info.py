@@ -1,6 +1,6 @@
-
 # This module return the docker infos
 import subprocess, os
+
 
 def find_docker_executable():
     """
@@ -39,21 +39,19 @@ def get_docker_infos(docker_path):
         text=True,
         shell=True,
     )
-    container_info        = result2.stdout.split()
-    container_id          = []
+    container_info = result2.stdout.split()
+    container_id = []
     for id, val in enumerate(container_info):
         if str(val) == "loopstructural_local_qgis_server-loopstructural":
-           container_id.append(container_info[id-1])
-           break
-            # container_image_name  = container_info[9]
-            # container_id          = container_info[8]
+            container_id.append(container_info[id - 1])
+            break
     docker_container_id = container_id[0]
-    print('found container id: ',docker_container_id)
-
+    # print("found container id: ", docker_container_id)
     return docker_container_id
 
 
 #
+
 
 def get_my_docker_infos():
     """
@@ -61,6 +59,6 @@ def get_my_docker_infos():
     """
     # Find Docker executable
     docker_executable = find_docker_executable()
-    print("docker_executable::::::::::::", docker_executable)
-    docker_container_id  = get_docker_infos(docker_executable)
-    return docker_executable, docker_container_id 
+    # print("docker_executable::::::::::::", docker_executable)
+    docker_container_id = get_docker_infos(docker_executable)
+    return docker_executable, docker_container_id

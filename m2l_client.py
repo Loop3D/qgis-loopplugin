@@ -231,6 +231,9 @@ def m2l_client_main(
             )
 
             for file, filepath in zip(filename, list_of_data):
+                print(
+                    f"STATUS: Moving <<{file}>> to map2loop server source data - JOB: completed"
+                )
                 run_progressbar(self, idx, nbre_pc_data_to_server, outgoing_flag, file)
                 all_data_uploaded_msg = asyncio.get_event_loop().run_until_complete(
                     data_uploader(

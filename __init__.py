@@ -23,6 +23,10 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
+import os
+
+# from pathlib import Path
+
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -31,8 +35,20 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-    #
+    # Import and check dependencies
+    from .install_deps import create_requirement_list, install_module
+
+    # find list of required modules
+    required_modules = create_requirement_list()
+    # Check if each required module is installed, and install it if necessary
+    for module in required_modules:
+        try:
+            __import__(module)
+            print(f"{module} has been successfully imported")
+        except ImportError:
+            print(f"{module} is not installed. Installing...")
+            # subprocess.run("pip install" + str(module))
+            install_module(module)
     from .loop_plugin import Loop_plugin
+
     return Loop_plugin(iface)
-
-

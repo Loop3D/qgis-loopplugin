@@ -59,7 +59,6 @@ async def handler(socket):
     # Receive and unpack packet
     data = await socket.recv()
     package = json.loads(data)
-    # print('I ..')
 
     # Check if packet valid
     if not check_message_format_valid(package):
@@ -76,7 +75,7 @@ async def handler(socket):
             "filename": package["filename"],
         }
 
-        # flag=str(response["filename"])
+        #
         flag = str(package["filename"])
 
         if flag == "":

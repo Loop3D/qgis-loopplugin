@@ -15,7 +15,10 @@ RUN conda install -c conda-forge -c loop3d map2loop -y
 RUN pip install websockets\
                 matplotlib 
 
+# copy server into the container
 COPY server ./server
 
-
+# make new directory into your container
+#RUN mkdir ./server/source_data
+#RUN mkdir ./output_data
 

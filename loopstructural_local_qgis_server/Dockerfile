@@ -23,3 +23,7 @@ RUN pip install websockets \
 
  
 COPY server ./server
+
+# make new directory into your container
+#RUN mkdir ./server/source_data
+#RUN mkdir ./output_data

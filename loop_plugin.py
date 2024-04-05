@@ -32,8 +32,6 @@ from .resources import *
 # Import the code for the dialog
 from .loop_plugin_dialog import Loop_pluginDialog
 import os.path
-import subprocess
-import sys
 
 
 class Loop_plugin:
@@ -50,17 +48,6 @@ class Loop_plugin:
         os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
         os.environ["QT_AUTO_SCREEN_SCALING_FACTOR"] = "1"
         os.environ["QT_SCALE_FACTOR"] = "1"
-        # List of required modules
-        required_modules = ["websockets"]
-
-        # Check if each required module is installed, and install it if necessary
-        for module in required_modules:
-            try:
-                __import__(module)
-                print(f"{module} is already installed")
-            except ImportError:
-                print(f"{module} is not installed. Installing...")
-                self.install_module(module)
         #
         # Save reference to the QGIS interface
         self.iface = iface
@@ -218,17 +205,6 @@ class Loop_plugin:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
-
-    def install_module(self, module_name):
-        """
-        Function to install a Python module using pip
-        module_name: the module to check
-        """
-        try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", module_name])
-            print(f"Successfully installed {module_name}")
-        except subprocess.CalledProcessError:
-            print(f"Failed to install {module_name}")
 
 
 # ####----

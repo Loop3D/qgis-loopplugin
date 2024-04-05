@@ -71,7 +71,11 @@ from .create_your_roi import (
     set_your_clip,
 )
 from .feature_import import welcoming_image, list_all_layers, update_file_path
-from .save_to_shp_and_geojson import create_strip_shapefile, create_geojson_file
+from .save_to_shp_and_geojson import (
+    create_strip_shapefile,
+    create_geojson_file,
+    create_data_for_no_del_col,
+)
 from .run_map2loop import hide_map2loop_features, run_client
 from .stop_docker_container import switch_off_docker
 from .scripts.loop.l2s_data_push import (
@@ -82,16 +86,6 @@ from .scripts.loop.l2s_data_push import (
 from .scripts.loop.l2s_docker_info import get_my_docker_infos
 from .scripts.loop.l2s_result_downloader import download_3d_data
 
-# if os.path.isfile("install_deps.py"):
-#     print("WARNING: new dependies will be installed....")
-#     import install_deps
-
-#     install_deps.installer_func
-#     os.rename("install_deps.py", "install_deps.installed")
-# else:
-#     pass
-
-# from .client import run_progressbar
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(
@@ -109,9 +103,8 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         #
+
         self.setupUi(self)
-        # check modules and install if it does not exist
-        # self.install_library("websockets")
 
         hide_all_combo_list(self, 0), welcoming_image(self, 1), hide_dtm_feature(
             self, 0
@@ -221,18 +214,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # The docker_btnPush here is used to stop the docker
         self.docker_btnPush.clicked.connect(self.docker_off)
 
-    ## integrate your library
-    # def install_library(self, library_name):
-    #     """
-    #     This function is used to check library and install it in case it is not available
-    #     """
-    #     try:
-    #         subprocess.call(["python", "-m", "pip", "install", library_name])
-    #         print(f"Successfully installed {library_name}")
-    #     except subprocess.CalledProcessError as e:
-    #         print(f"Error installing {library_name}:{e}")
-    #     return
-
     def docker_off(self):
         """
         This function switch off the docker from an external python file
@@ -267,7 +248,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.map2loop_1.setText(
             "Enter 1- Remote machine ip OR 2-localhost if using local pc"
         )
-        self.map2loop_3.setText(str(8000))
+        if self.sender().objectName() == "LoopStructural_Button":
+            self.map2loop_3.setText(str(8888))
+        else:
+            self.map2loop_3.setText(str(8000))
         return
 
     def run_map2loop_module(self):
@@ -275,7 +259,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         Transfert m2l data into the remote server
         """
         self.map2loop_flag = self.sender().objectName()
-        # print("map2loop flag is: ", self.map2loop_flag)
+        self.run_flag = self.sender().objectName()
         # disable map2loop and Loopstructural
         self.Map2Loop_Button.setEnabled(False)
         self.LoopStructural_Button.setEnabled(False)
@@ -295,6 +279,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.map2loop_Ok_pushButton.clicked.connect(self.run_the_server_calculation)
         else:
             self.docker_remote_or_local_server_flag = "local server"
+            self.map2loop_msg = map2loop_msg
             #
             self.map2loop_log_TextEdit.setVisible(True)
             self.map2loop_log_TextEdit.setGeometry(170, 150, 750, 300)
@@ -332,6 +317,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         Transfert l2s data into the remote server
         """
         self.loopsctructural_flag = self.sender().objectName()
+        self.run_flag = self.sender().objectName()
         self.loop3d_dict = push_data_into_l2s_server(
             self.m2l_output_data, self.loop_data_source
         )
@@ -348,27 +334,22 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # hide log text
         self.map2loop_log_TextEdit.hide()
         # now send data into loop server
-        map2loop_msg = QMessageBox.question(
+        loop_msg = QMessageBox.question(
             self,
             "Execution channel",
             "Where to execute map2loop? \n \n Yes:--> For local server.  \n \n No:-->  For remote server.",
             QMessageBox.Yes | QMessageBox.No,
         )
-        if map2loop_msg == QMessageBox.No:
+        if loop_msg == QMessageBox.No:
             # Here we are using remote machine
-            self.docker_remote_or_local_server_flag = "remote server "
-            map2loop_msg = QMessageBox.question(
-                self,
-                "Update coming soon",
-                "Click yes to run local server \n \n Yes:--> For local server.  \n \n No:-->  For remote server.",
-                QMessageBox.Yes | QMessageBox.No,
-            )
+            self.docker_remote_or_local_server_flag = "remote server"
             # activate server info
-            # self.activate_server_info()
+            self.activate_server_info()
             # launch the remote calculation
             self.map2loop_Ok_pushButton.clicked.connect(self.run_the_server_calculation)
         else:
             self.docker_remote_or_local_server_flag = "local server"
+            self.loop_msg = loop_msg
             #
             self.map2loop_log_TextEdit.setVisible(True)
             self.map2loop_log_TextEdit.setGeometry(170, 150, 750, 300)
@@ -387,7 +368,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Running map2Loop on the docker container on your PC",
                 "\n \n " + " -----> CLICK OK AND WAIT <-----",
             )
-            self.docker_remote_or_local_server_flag = "local server"
             # send data and run the calculation on the docker
             self.run_the_server_calculation()
         return
@@ -396,8 +376,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         This function activate docker compose from an external python file
         """
-
-        if self.sender().objectName() == "Map2Loop_Button":
+        if self.run_flag == "Map2Loop_Button":
             # docker build file path
             docker_build_file_path = (
                 str(self.plugin_dir)
@@ -408,7 +387,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 str(self.plugin_dir)
                 + "\\map2loop_local_qgis_server\\docker-compose.yml"
             )
-        elif self.sender().objectName() == "LoopStructural_Button":
+        else:
             # docker build file path
             docker_build_file_path = (
                 str(self.plugin_dir)
@@ -419,7 +398,8 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 str(self.plugin_dir)
                 + "\\loopstructural_local_qgis_server\\docker-compose.yml"
             )
-        # Here we passing sys.argv[1] to the python file build_docker_image.py such as subprocess.run(['cmd','filepath',sys.argv[1]])
+        # Here we passing sys.argv[1] to the python file build_docker_image.py
+        # such as subprocess.run(['cmd','filepath',sys.argv[1]])
         res = subprocess.run(
             [
                 "python",
@@ -443,30 +423,48 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 time.sleep(5)
                 run_client(
                     self,
+                    self.run_flag,
                     self.data_folder,
                     self.hostname,
                     self.username,
                     self.port_number,
                     self.docker_config,
                 )
-                # self.Map2Loop_Button.setEnabled(False)
-                if self.sender().objectName() == "Map2Loop_Button":
-                    self.LoopStructural_Button.setEnabled(True)
-                else:
-                    self.LoopStructural_Button.setEnabled(False)
-                    docker_exe, container_id = get_my_docker_infos()
-                    container_output_path = "output_data/vtk/output_data.html"
-                    container_src_data_buffer = (
-                        f"{container_id}:{container_output_path}"
-                    )
+                #
+                self.loopstructural_activator(self.sender().objectName())
+        return
 
-                    download_res = download_3d_data(
-                        docker_exe,
-                        container_src_data_buffer,
-                        self.loop_output_data,
-                    )
-                    if download_res == 0:
-                        self.Loop3dviz_Button.setEnabled(True)
+    def loopstructural_activator(self, sender):
+        """
+        This function activate the loopstructural function
+        sender   :  the qpushbutton activated
+        """
+        if sender == "Map2Loop_Button":
+            self.LoopStructural_Button.setEnabled(True)
+            print(
+                f"STATUS: Running Successfully <<{sender.split('_')[0]}>> server - JOB: completed"
+            )
+        else:
+            # create source_data and output_data from docker compose
+            self.LoopStructural_Button.setEnabled(False)
+            if self.docker_remote_or_local_server_flag == "local server":
+
+                docker_exe, container_id = get_my_docker_infos()
+                container_output_path = "output_data/vtk/output_data.html"
+                container_src_data_buffer = f"{container_id}:{container_output_path}"
+                time.sleep(0.1)
+                download_res = download_3d_data(
+                    docker_exe,
+                    container_src_data_buffer,
+                    self.loop_output_data,
+                )
+                if download_res == 0:
+                    self.Loop3dviz_Button.setEnabled(True)
+            else:
+                print(
+                    f"STATUS: Running Successfully <<{sender.split('_')[0]}>> server - JOB: completed"
+                )
+                self.Loop3dviz_Button.setEnabled(True)
 
         return
 
@@ -475,34 +473,63 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         This function run the modelling calculation on the server,
         # 1- Activate the server API
         # 2- Send the data to the server
-        # 3- run map2loop and push back the result
+        # 3- run map2loop/loopstructural and push back the result
         """
-        if self.sender().objectName() == "Map2Loop_Button":
-            self.docker_config = self.docker_config_file
-        else:  # This is for loopstructural data
-            # combine the two dictionanry
-            self.docker_config = {
-                **self.docker_config_file,
-                **{
-                    "l2s_project_path": str(self.data_folder),
-                    "LPFilename": "server_" + self.loop3d_dict["LPFilename"],
-                },
-            }
+        self.docker_config = self.docker_config_file
+        try:
+            if (
+                self.sender().objectName() == "Map2Loop_Button"
+                and self.sender().text() == "Run map2loop"
+            ):
+                self.docker_config = self.docker_config_file
+        except:
+            pass
+        try:
+            if self.docker_remote_or_local_server_flag == "local server":
+                if (
+                    self.sender().objectName() == "LoopStructural_Button"
+                    and self.sender().text() == "Run LoopStructural"
+                ):
+                    # This is for loopstructural data
+                    # combine the two dictionanry
+                    self.docker_config = {
+                        **self.docker_config_file,
+                        **{
+                            "l2s_project_path": str(self.data_folder),
+                            "LPFilename": "server_" + self.loop3d_dict["LPFilename"],
+                        },
+                    }
+                else:
+                    print("Docker local server")
+            elif self.docker_remote_or_local_server_flag == "remote server":
+                if (
+                    self.sender().objectName() == "map2loop_Ok_pushButton"
+                    and self.run_flag == "LoopStructural_Button"
+                ):
+
+                    # This is for loopstructural data
+                    # combine the two dictionanry
+                    self.docker_config = {
+                        **self.docker_config_file,
+                        **{
+                            "l2s_project_path": str(self.data_folder),
+                            "LPFilename": "server_" + self.loop3d_dict["LPFilename"],
+                        },
+                    }
+                else:
+                    print("Docker remote server")
+            else:
+                pass
+        except:
+            pass
         # hide the map2loop details
         hide_map2loop_features(
             self.map2loop_label_list, self.map2loop_qline_list, False
         )
+        # verify this space for next...
         self.data_folder = str(self.first_parent_folder)
         # disable server frame
         self.server_frame.hide()
-        # Check if websocket module exist:
-        try:
-            import websockets
-
-            print("websockets is available")
-        except:
-            subprocess.run("pip install websockets")
-            print("websockets is not available")
         try:
 
             # config path
@@ -511,6 +538,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.username, self.hostname, self.port_number = self.pass_server_infos(
                     "local server"
                 )
+
                 self.run_local_docker()
 
             else:
@@ -520,12 +548,15 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 )
                 run_client(
                     self,
+                    self.run_flag,
                     self.data_folder,
                     self.hostname,
                     self.username,
                     self.port_number,
                     self.docker_config,
                 )
+                sender = self.run_flag
+                self.loopstructural_activator(sender=sender)
         except:
             print("Can't fire the docker server.....")
         return
@@ -1195,7 +1226,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # Update the CRS value
         self.crs_value = self.CRS_LineEditor.text()
         self.crs_funct_to_hide()
-        # three_push_activator(self,1)
 
         try:
             self.data_updater()
@@ -1863,21 +1893,18 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     or self.sender_name == "DTMButton"
                     and self.dtm == "Qgis_checkBox"
                 ):
-                    # self.file_to_search = []
-                    # for item_to_search in ["_colours.csv", ".hjson"]:
+
                     self.csv_file = [
                         a
-                        for a in glob.glob(json_path + "\*")
+                        for a in glob.glob(str(Path(self.GeolPath).parent) + "\*")
                         if "_colours.csv" in str(a)
                     ][0]
-                    # self.file_to_search.append(self.file)
 
                     self.hjson_file = [
-                        a for a in glob.glob(json_path + "\*") if ".hjson" in str(a)
+                        a
+                        for a in glob.glob(str(Path(self.GeolPath).parent) + "\*")
+                        if ".hjson" in str(a)
                     ][0]
-                    # print("self csv and: ", self.file_to_search)
-                    # list_of_file = self.file_to_search + [self.DTM_filename]
-                    # print("list of files: ", list_of_file)
                     #
                     for file_to_move in [
                         self.csv_file,
@@ -1888,9 +1915,11 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             except:
                 pass
 
+            #
             for file, field_to_keep in zip(list_of_file, list_to_strip):
                 find_the_layer_name = str(file).rpartition("/")
                 filename = find_the_layer_name[2].split(".")[0]
+
                 # create new strip shapefile
                 strip_file = create_strip_shapefile(
                     file, field_to_keep, filename, process_source_data
@@ -1914,10 +1943,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
                 # create json file
                 create_json_file(process_source_data, formation_data)
+                #
                 self.docker_config_file = self.save_your_python_file(
                     str(process_source_data)
                 )
-
             except:
                 Layerbutton = QMessageBox.question(
                     self,
@@ -2335,6 +2364,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "hjson_file": "server_" + str(Path(self.hjson_file).name),
             }
         else:
+
             self.docker_config_file = {
                 "bounding_box": str(bbox_3d),
                 "run_flags": str(run_flags),
@@ -2351,6 +2381,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "csv_file": "server_" + str(Path(self.csv_file).name),
                 "hjson_file": "server_" + str(Path(self.hjson_file).name),
             }
+
         return self.docker_config_file
 
 

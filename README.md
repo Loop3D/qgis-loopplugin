@@ -2,9 +2,9 @@
 # Welcome to qgis-loopplugin's plugin overview!
 ============================================
 
-## Why loopplugin?
+## Why qgis-loopplugin(version=0.9.1)?
 
-This plugin process various qgis layer such as a dtm raster, geology, fault and structure point layers.
+This plugin version process various qgis layer such as a dtm raster, geology, fault and structure point layers.
 These various layers can be loaded using 4 ways for the dtm, while the others in two options.
 
 For example, we can load a dtm raster, using the following 4 Qcheckbox options:

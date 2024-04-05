@@ -46,7 +46,6 @@ class M2l_Wrapper:
         t0 = time.time()
 
         # Specify the boundary of the region of interest in the appropriate projection coordinates
-        print("I am here now @", t0)
         config_data = self.param_conf
         print("config_data: ", config_data)
         bbox_3d = ast.literal_eval(config_data["bounding_box"])

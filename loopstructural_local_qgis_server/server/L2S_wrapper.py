@@ -33,7 +33,7 @@ class LoopStructural_Wrapper:
         t1 = time.time()
        
         config_data = self.param_conf
-        print("config_data: ", config_data)
+        print("config_data in wrapper: ", config_data)
         bbox_3d = ast.literal_eval(config_data["bounding_box"])
         print("bbox_3d: ", bbox_3d)
         # Renaming the filename so that it match the docker filenames
@@ -49,7 +49,7 @@ class LoopStructural_Wrapper:
             + str(config_data["structure_filename"]),
             mindep_filename="./server/source_data/"
             + str(config_data["mindep_filename"]),
-            dtm_filename="./server/source_data/server_dtm_rp.tif",
+            dtm_filename="./server/source_data/" + str(config_data['dtm_filename']) ,
             metadata_filename="./server/source_data/server_data.json",
             clut_filename="./server/source_data/" + str(config_data["csv_file"]),
             clut_file_legacy=True,
@@ -106,6 +106,12 @@ class LoopStructural_Wrapper:
         
         model_name = 'output_data'
         print('Here is the model name: ',model_name)
+        # check whether directory 'output_data' already exists
+        if not os.path.exists(str(model_name)):
+          os.mkdir(str(model_name))
+          print("Folder %s created!" % './'+str(model_name))
+        else:
+          print("Folder %s already exists" % './'+str(model_name))
         try:
            vtk_path = str(os.getcwd())+'/'+str(model_name)+'/vtk/'
            #vtk_path = os.path.join("./"+str(model_name),'/vtk/')

@@ -6,7 +6,7 @@
 name=Loop processor
 qgisMinimumVersion=3.0
 description=This plugin preprocess multiple layers to generate python script and json file that are used as input for map2loop 
-version=0.9
+version=0.9.1
 author=Michel M. Nzikou / CET - UWA
 email=michel.nzikoumamboukou@uwa.edu.au
 

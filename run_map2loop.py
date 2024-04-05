@@ -27,7 +27,7 @@ def hide_map2loop_features(map2loop_qline_list, map2loop_label_list, flag):
     return
 
 
-def run_client(self, dir, hostname, username, port_number, config_param):
+def run_client(self, run_flag, dir, hostname, username, port_number, config_param):
     """
     This function run the client exchange process
     # dir         : local directory where the result data will be saved
@@ -35,11 +35,14 @@ def run_client(self, dir, hostname, username, port_number, config_param):
     # username    : the user name or company/ department
     # port_number : the default port is 8000
     # config_param: the configuration parameters extracted from data processing
+    # run_flag    : engine to run the calculation
     """
-    if self.sender().objectName() == "Map2Loop_Button":
+    if run_flag == "Map2Loop_Button":
+
         m2l_client_main(self, username, hostname, port_number, config_param, dir)
     else:
         l2s_client_main(self, username, hostname, port_number, config_param, dir)
+        self.map2loop_Ok_pushButton.disconnect()
     return
 
 
