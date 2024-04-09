@@ -24,6 +24,10 @@ This plugin will requires the below dependencies:
 - Qt version  : 5.15.3
 - Python 3.9.5
 - Docker Desktop version 4.26.1 (131620) or higher
+To avoid issue with screen resolution, use the below display resolution or keep the ratio between 1.6 and 1.78 settings:
+- 1920 x 1080
+- 1920 x 1200
+- 3840 x 2160
 
 ## 1.2. How to install **loopplugin**?
   You will need a python package manager [see here](https://docs.anaconda.com/anaconda/install/index.html).
