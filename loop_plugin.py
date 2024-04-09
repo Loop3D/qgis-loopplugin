@@ -24,6 +24,8 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QApplication
+from qgis.PyQt.QtCore import Qt
 
 
 # Initialize Qt resources from file resources.py
@@ -173,6 +175,8 @@ class Loop_plugin:
 
         # will be set False in run()
         self.first_start = True
+        # Set DPI Awareness
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         ####----
         # self.addPipeLinePoint.canvasClicked.connect(self.evaluatePipeLine)
         ####----
