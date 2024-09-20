@@ -178,52 +178,13 @@ async def map2loop_result_extractor(
             resp = await socket.recv()
             resp = json.loads(resp)
             data = base64.b64decode(resp["response"].encode("UTF-8"))
-            dir = str(your_local_dir) + str(server_filename)
+            dir = os.path.join(str(your_local_dir), str(server_filename))
+            print(f"your local directory is :{dir}")
             with open(str(dir), mode="wb") as file:
                 file.write(data)
                 print("did it go through?", resp["msg"])
         except Exception as e:
             print("server filename: ", server_filename, e)
-
-
-async def receive_html(
-    file_size, port_number, hostname, your_local_dir, server_filename, list_server_data
-):
-    """
-    This function deals with large 3D model save as in HTML format
-    file_size       : the size of the data (i.e: 10MB, 1GB for )
-    port_number     : host machine availaible port number
-    hostname        : host machine ip address
-    server_filename : server model name
-    your_local_dir  : loopstructural result output folder
-    list_server_data: list of output data
-    """
-
-    uri = "ws://" + str(hostname) + ":" + str(port_number)
-    async with websockets.connect(uri, max_size=file_size) as socket:
-
-        package = {
-            "client_id": 1,
-            "project_id": 1,
-            "function": "DOWNLOAD",
-            "params": "",
-            "filename": "",
-            "serv_data": str(list_server_data),
-        }
-
-        await socket.send(json.dumps(package))
-        # Receive HTML data from the server
-        html_data = await socket.recv()
-        file_path = str(your_local_dir) + str(server_filename)
-        # filename
-        file_name = server_filename
-        # Write HTML data to a file
-        with open(file_path, "w") as file:
-            file.write(html_data)
-            print(
-                f"STATUS: Downloaded <<{file_name}>> to local folder - JOB: completed"
-            )
-    return
 
 
 def l2s_client_main(
@@ -263,6 +224,18 @@ def l2s_client_main(
                 + str(self.dt_string)
                 + "/"
             )
+
+            # Define the folder path
+            self.vtk_folder_path = str(local_output_data_path) + "/vtk"
+
+            # Check if the folder exists
+            if not os.path.exists(self.vtk_folder_path):
+                # If it doesn't exist, create it
+                os.makedirs(self.vtk_folder_path)
+                print(f"Folder '{self.vtk_folder_path}' created.")
+            else:
+                print(f"Folder '{self.vtk_folder_path}' already exists.")
+
             nbre_pc_data_to_server = len(list_of_data)
             filename = []
             for a in list_of_data:
@@ -306,14 +279,16 @@ def l2s_client_main(
             data_str = map2loop_output[0].replace(" ", "")
             output_list = data_str.replace("{", "").replace("}", "").split(",")
             # Create a dictionary of server output data and filepath
-            dictionary = {}
+            self.dictionary = {}
             for i in output_list:
-                dictionary[i.split(":")[0].strip("'").replace('"', "")] = i.split(":")[
-                    1
-                ].strip("\"'")
+                self.dictionary[i.split(":")[0].strip("'").replace('"', "")] = i.split(
+                    ":"
+                )[1].strip("\"'")
+            print("data downloaded from server is: ", self.dictionary)
+
             # Download data from the server/docker container
             index = 1  # Index for file counts
-            nbre_server_data_to_pc = len(dictionary)  #  Nbre of result output
+            nbre_server_data_to_pc = len(self.dictionary)  #  Nbre of result output
             incoming_flag = (
                 "Server ------> PC"  #  action to tranfert data from docker to your pc
             )
@@ -322,40 +297,26 @@ def l2s_client_main(
                 ".............. MODE: " + str(incoming_flag) + ".............. " + "\n"
             )
 
-            for filename, filepath in dictionary.items():
+            for filename, filepath in self.dictionary.items():
                 run_progressbar(
                     self, index, nbre_server_data_to_pc, incoming_flag, filename
                 )
-                if self.docker_remote_or_local_server_flag == "local server":
-                    pass
-                else:
-                    print(
-                        f"STATUS: Downloading <<{filename}>> from server - JOB: pending"
+                print(f"STATUS: Downloading <<{filename}>> from server - JOB: pending")
+                asyncio.new_event_loop().run_until_complete(
+                    map2loop_result_extractor(
+                        self.vtk_folder_path,
+                        str(filepath),
+                        str(filename),
+                        ip_adress,
+                        port_number,
                     )
-                    if ".html" in filename:
-                        CUSTOM_MAX_SIZE = 10 * 1024 * 1024  # file_size
-                        asyncio.new_event_loop().run_until_complete(
-                            receive_html(
-                                CUSTOM_MAX_SIZE,
-                                port_number,
-                                ip_adress,
-                                local_output_data_path,
-                                str(filename),
-                                str(filepath),
-                            )
-                        )
-                    else:
-                        asyncio.new_event_loop().run_until_complete(
-                            map2loop_result_extractor(
-                                local_output_data_path,
-                                str(filepath),
-                                str(filename),
-                                ip_adress,
-                                port_number,
-                            )
-                        )
+                )
                 index += 1
-            self.Reload_btnPush.setVisible(True)
+                if idx == nbre_pc_data_to_server:
+                    self.map2loop_log_TextEdit.append(
+                        str(all_data_uploaded_msg[0]) + "\n"
+                    )
+                    self.Reload_btnPush.setVisible(True)
 
     except:
         self.map2loop_log_TextEdit.setVisible(True)

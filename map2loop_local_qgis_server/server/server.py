@@ -135,7 +135,7 @@ async def handler(socket):
                 bbox_3d = ast.literal_eval(config_data["bounding_box"])
                 # # # Create the map2loop project and run rocess
                 m2l = M2l_Wrapper(config_data)
-                m2l.run_all()
+                m2l.run_all_wrapper()
 
                 response["response"] = f"EXECUTED map2loop Successfully"
                 try:

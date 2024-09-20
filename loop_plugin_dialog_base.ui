@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>996</width>
-    <height>668</height>
+    <height>651</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -851,10 +851,10 @@
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>680</x>
      <y>60</y>
      <width>207</width>
-     <height>22</height>
+     <height>50</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout_2">
@@ -870,8 +870,8 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="CRS_LineEditor"/>
+    <item row="1" column="0" rowspan="2">
+     <widget class="QgsProjectionSelectionWidget" name="CRS_LineEditor"/>
     </item>
    </layout>
   </widget>
@@ -1390,6 +1390,13 @@
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsProjectionSelectionWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsprojectionselectionwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

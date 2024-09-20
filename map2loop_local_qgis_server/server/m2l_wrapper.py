@@ -8,26 +8,13 @@
 from map2loop.project import Project
 from map2loop.m2l_enums import Datatype, VerboseLevel
 from map2loop.sampler import SamplerSpacing, SamplerDecimator
-from map2loop.sorter import (
-    SorterUseHint,
-    SorterUseNetworkX,
-    SorterAgeBased,
-    SorterAlpha,
-)
+from map2loop.sorter import SorterAlpha
 import time
 import os, ast
 
 ##
 
 from datetime import datetime
-#
-#import pyproj
-# Enable network access
-#pyproj.network.set_network_enabled(True)
-#import os
-#os.environ['PROJ_NETWORK'] = 'ON'
-#
-# import shutil, subprocess
 
 
 class M2l_Wrapper:
@@ -36,15 +23,14 @@ class M2l_Wrapper:
     def __init__(self, param_conf):
         self.param_conf = param_conf
 
-    def run_all(self, **kwargs):
+    def run_all_wrapper(self, **kwargs):
 
         nowtime = datetime.now().isoformat(timespec="minutes")
         model_name = nowtime.replace(":", "-").replace("T", "-")
-        loop_project_filename = os.path.join('./output_data', "local_source.loop3d")
-        #loop_project_filename = os.path.join(model_name, "local_source.loop3d")
+        loop_project_filename = os.path.join("./output_data", "local_source.loop3d")
+        # loop_project_filename = os.path.join(model_name, "local_source.loop3d")
 
         t0 = time.time()
-
         # Specify the boundary of the region of interest in the appropriate projection coordinates
         config_data = self.param_conf
         print("config_data: ", config_data)
@@ -52,7 +38,7 @@ class M2l_Wrapper:
         print("bbox_3d: ", bbox_3d)
         # Renaming the filename so that it match the docker filenames
         print('config_data["geology_filename"]: ', config_data["geology_filename"])
-        
+
         # Initialise the project with the shapefiles, dtm, config file
         # output locations and projection to work in
         proj = Project(
@@ -63,7 +49,7 @@ class M2l_Wrapper:
             + str(config_data["structure_filename"]),
             mindep_filename="./server/source_data/"
             + str(config_data["mindep_filename"]),
-            dtm_filename="./server/source_data/server_dtm_rp.tif",
+            dtm_filename="./server/source_data/" + str(config_data["dtm_filename"]),
             metadata_filename="./server/source_data/server_data.json",
             clut_filename="./server/source_data/" + str(config_data["csv_file"]),
             clut_file_legacy=True,
@@ -83,26 +69,32 @@ class M2l_Wrapper:
         proj.set_sampler(Datatype.GEOLOGY, SamplerSpacing(200.0))
         proj.set_sampler(Datatype.FAULT, SamplerSpacing(200.0))
 
-        print("Now:::taking every second orientation observation (0 or 1 means take all observations)")
+        print(
+            "Now:::taking every second orientation observation (0 or 1 means take all observations)"
+        )
         # Set to only take every second orientation observation (0 or 1 means take all observations)
         proj.set_sampler(Datatype.STRUCTURE, SamplerDecimator(2))
 
-        print('Now:::what text is expected for intrusions (contained within the description field)')
+        print(
+            "Now:::what text is expected for intrusions (contained within the description field)"
+        )
         # Set what text is expected for intrusions (contained within the description field)
-        proj.map_data.config.geology_config["intrusive_text"] = "mafic intrusive"
+        # proj.map_data.config.geology_config["intrusive_text"] = "mafic intrusive"
 
-        print('Now:::specific layers from the geology map to be ignored (commonly "cover" or "water")')
+        print(
+            'Now:::specific layers from the geology map to be ignored (commonly "cover" or "water")'
+        )
         # Set specific layers from the geology map to be ignored (commonly "cover" or "water")
-        proj.set_ignore_codes(["cover", "Fortescue_Group", "A_FO_od"])
+        # proj.set_ignore_codes(["cover", "Fortescue_Group", "A_FO_od"])
 
         # Specify which stratigraphic columns sorter to use, other options are
         # (SorterAlpha, SorterAgeBased, SorterUseHint, SorterUseNetworkX, SorterMaximiseContacts, SorterObservationProjections)
         proj.set_sorter(SorterAlpha())
-        proj.run_all()
-        print('map2loop run successfully!!! ')
+        print("Now::: Alpha sorting with set_sorter")
+        proj.run_all(user_defined_stratigraphic_column=None, take_best=True)
+        print("map2loop run successfully!!! ")
         # Or you can run map2loop and pre-specify the stratigraphic column
         column = [
-            # youngest
             "Turee_Creek_Group",
             "Boolgeeda_Iron_Formation",
             "Woongarra_Rhyolite",
@@ -115,15 +107,6 @@ class M2l_Wrapper:
             "Bunjinah_Formation",
             "Pyradie_Formation",
             "Fortescue_Group",
-            # oldest
         ]
-
-        
-# proj.run_all(user_defined_stratigraphic_column=column)
-
-# Or you can get map2loop to run all column sorting algorithms it has and takes the one
-# that has the longest total basal contact length
-#proj.run_all(take_best=True)
-
-
-
+        # proj.run_all(user_defined_stratigraphic_column=column, take_best=False)
+        # print("map2loop run successfully!!! ")

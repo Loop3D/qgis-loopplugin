@@ -21,12 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 """
-import os, glob, subprocess, time
 from qgis.PyQt import uic, QtWidgets
 from qgis.core import QgsProject
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from qgis.gui import QgsProjectionSelectionDialog
+
+import os, glob, subprocess, time
 from pathlib import Path
 import os.path, shutil
 from datetime import datetime
@@ -74,7 +76,6 @@ from .feature_import import welcoming_image, list_all_layers, update_file_path
 from .save_to_shp_and_geojson import (
     create_strip_shapefile,
     create_geojson_file,
-    create_data_for_no_del_col,
 )
 from .run_map2loop import hide_map2loop_features, run_client
 from .stop_docker_container import switch_off_docker
@@ -83,9 +84,12 @@ from .scripts.loop.l2s_data_push import (
     push_processed_into_loopsource_data,
     show_3d_plot,
 )
-from .scripts.loop.l2s_docker_info import get_my_docker_infos
-from .scripts.loop.l2s_result_downloader import download_3d_data
 
+# from .scripts.loop.l2s_docker_info import get_my_docker_infos
+from .scripts.loop.l2s_result_downloader import (
+    plot_block_model_with_surfaces_and_stratigraphy,
+)
+from .scripts.map.bbox_extract import extract_bbox
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(
@@ -127,9 +131,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         hide_map2loop_features(
             self.map2loop_label_list, self.map2loop_qline_list, False
         )
-
-        self.CRS_LineEditor.setText(str("epsg:28350"))
-        self.crs_value = self.CRS_LineEditor.text()
         self.SearchFolder.setEnabled(False)
         self.params_function_activator(False)
         activate_loader_checkbox(self, 0)
@@ -263,14 +264,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # disable map2loop and Loopstructural
         self.Map2Loop_Button.setEnabled(False)
         self.LoopStructural_Button.setEnabled(False)
-        # unhide map2loop qlineeditor and label
-        map2loop_msg = QMessageBox.question(
-            self,
-            "Execution channel",
-            "Where to execute map2loop? \n \n Yes:--> For local server.  \n \n No:-->  For remote server.",
-            QMessageBox.Yes | QMessageBox.No,
-        )
-        if map2loop_msg == QMessageBox.No:
+
+        map2loop_reply = self.create_local_remote_serverbutton()
+        if map2loop_reply == QMessageBox.No:
+            print("You chose Remote Server!")
             # Here we are using remote machine
             self.docker_remote_or_local_server_flag = "remote server "
             # activate server info
@@ -278,8 +275,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             # launch the remote calculation
             self.map2loop_Ok_pushButton.clicked.connect(self.run_the_server_calculation)
         else:
+            print("You chose Local Server!")
             self.docker_remote_or_local_server_flag = "local server"
-            self.map2loop_msg = map2loop_msg
+            self.map2loop_msg = map2loop_reply
             #
             self.map2loop_log_TextEdit.setVisible(True)
             self.map2loop_log_TextEdit.setGeometry(170, 150, 750, 300)
@@ -289,33 +287,47 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "\n \n"
                 + "           DOCKER IS BEING CREATED AND THEN TURN ON ************\n"
                 "\n \n"
-                + "           WHILE LOADING, <wait and relax> UNTIL THE MAGIC HAPPEN?\n \n"
+                + "           MAP2LOOP RUNNING LOCALLY \n \n"
                 + "========================================================== \n \n"
             )
 
-            QMessageBox.about(
-                self,
-                "Running map2Loop on the docker container on your PC",
-                "\n \n " + " -----> CLICK OK AND WAIT <-----",
-            )
-            self.docker_remote_or_local_server_flag = "local server"
             # send data and run the calculation on the docker
             self.run_the_server_calculation()
         return
 
+    # def select_model_plot(self):
+    #     '''
+    #     This is used to select individual plots
+    #     '''
+
     def run_loop3d_viz(self):
         """
-        This function call the show_3d_plot to plot 3d data in the browser
+        This function call the show_3d_plot
         """
-        web_link_to_open = str(self.loop_output_data) + "/output_data.html"
-        show_3d_plot(web_link_to_open)
+        # self.Qgis_comboBox.setVisible(True)
+        # self.Ok_pushButton.setVisible(True)
+        # if self.sender().objectName() == 'Loop3dviz_Button':
+        #    self.Ok_pushButton.clicked.connect(self.select_plot())
+        ##
         self.Loop3dviz_Button.setEnabled(False)
+        # Extract names using list comprehension
+        # filename_list = list(self.dictionary.keys())
+        output_list = [
+            os.path.join(self.vtk_folder_path, key)
+            for key in list(self.dictionary.keys())
+        ]
+        print(f"output_list is: {output_list}")
+        # Visualize data
+        # vtk_pyvista_visualizer(output_list, "block_model")
+        # plot_model_with_surfaces(output_list)
+        plot_block_model_with_surfaces_and_stratigraphy(output_list)
         return
 
     def run_loopstructural_module(self):
         """
         Transfert l2s data into the remote server
         """
+
         self.loopsctructural_flag = self.sender().objectName()
         self.run_flag = self.sender().objectName()
         self.loop3d_dict = push_data_into_l2s_server(
@@ -334,12 +346,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # hide log text
         self.map2loop_log_TextEdit.hide()
         # now send data into loop server
-        loop_msg = QMessageBox.question(
-            self,
-            "Execution channel",
-            "Where to execute map2loop? \n \n Yes:--> For local server.  \n \n No:-->  For remote server.",
-            QMessageBox.Yes | QMessageBox.No,
-        )
+        loop_msg = self.create_local_remote_serverbutton()
         if loop_msg == QMessageBox.No:
             # Here we are using remote machine
             self.docker_remote_or_local_server_flag = "remote server"
@@ -359,15 +366,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "\n \n"
                 + "           DOCKER IS BEING CREATED AND THEN TURN ON ************\n"
                 "\n \n"
-                + "           WHILE LOADING, <wait and relax> UNTIL THE MAGIC HAPPEN?\n \n"
+                + "           LOOPSTRUCTURAL RUNNING LOCALLY \n \n"
                 + "========================================================== \n \n"
             )
 
-            QMessageBox.about(
-                self,
-                "Running map2Loop on the docker container on your PC",
-                "\n \n " + " -----> CLICK OK AND WAIT <-----",
-            )
             # send data and run the calculation on the docker
             self.run_the_server_calculation()
         return
@@ -439,6 +441,19 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         This function activate the loopstructural function
         sender   :  the qpushbutton activated
         """
+        # Check if vtk folder exist locally:
+
+        # Define the folder path
+        vtk_folder_path = str(self.loop_output_data) + "/vtk"
+
+        # Check if the folder exists
+        if not os.path.exists(vtk_folder_path):
+            # If it doesn't exist, create it
+            os.makedirs(vtk_folder_path)
+            print(f"Folder '{vtk_folder_path}' created.")
+        else:
+            print(f"Folder '{vtk_folder_path}' already exists.")
+
         if sender == "Map2Loop_Button":
             self.LoopStructural_Button.setEnabled(True)
             print(
@@ -447,25 +462,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             # create source_data and output_data from docker compose
             self.LoopStructural_Button.setEnabled(False)
-            if self.docker_remote_or_local_server_flag == "local server":
-
-                docker_exe, container_id = get_my_docker_infos()
-                container_output_path = "output_data/vtk/output_data.html"
-                container_src_data_buffer = f"{container_id}:{container_output_path}"
-                time.sleep(0.1)
-                download_res = download_3d_data(
-                    docker_exe,
-                    container_src_data_buffer,
-                    self.loop_output_data,
-                )
-                if download_res == 0:
-                    self.Loop3dviz_Button.setEnabled(True)
-            else:
-                print(
-                    f"STATUS: Running Successfully <<{sender.split('_')[0]}>> server - JOB: completed"
-                )
-                self.Loop3dviz_Button.setEnabled(True)
-
+            self.Loop3dviz_Button.setEnabled(True)
         return
 
     def run_the_server_calculation(self):
@@ -897,7 +894,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         DipDirectiontype_colNames = ["num", "alpha"]
         self.cmbDescriptionLayerIDName.clear()
         self.cmbDescriptionLayerIDName.addItems(DipDirectiontype_colNames)
-        DipDirectionConv_colNames = ["Strike", "Dip Direction"]
+        DipDirectionConv_colNames = ["Dip Direction", "Strike"]
         self.cmbRocktype2LayerIDName.clear()
         self.cmbRocktype2LayerIDName.addItems(DipDirectionConv_colNames)
         qline_and_label_mover(
@@ -944,7 +941,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.colNames = xlayer_reader(self)
         label_mover(self, struct_comboHeader)
         self.combo_column_appender(self.colNames, self.StructButton.objectName())
-        DipDirectionConv_colNames = ["Strike", "Dip Direction"]
+        DipDirectionConv_colNames = ["Dip Direction", "Strike"]
         self.cmbDescriptionLayerIDName.clear()
         self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)
         qline_and_label_mover(
@@ -1121,7 +1118,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
 
         # Update the CRS value
-        self.crs_value = self.CRS_LineEditor.text()
+        # crs_name = self.CRS_LineEditor.crs().description()
+        self.crs_value = self.CRS_LineEditor.crs().authid()
+        # print("value of the crs: ", self.crs_value)
         self.crs_funct_to_hide()
         three_push_activator(self, 1)
 
@@ -1174,7 +1173,8 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         MAIN Fault function
         """
         # Update the CRS value
-        self.crs_value = self.CRS_LineEditor.text()
+        # self.crs_value = self.CRS_LineEditor.text()
+        self.crs_value = self.CRS_LineEditor.crs().authid()
         self.crs_funct_to_hide()
 
         try:
@@ -1224,7 +1224,8 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         MAIN Structure function
         """
         # Update the CRS value
-        self.crs_value = self.CRS_LineEditor.text()
+        # self.crs_value = self.CRS_LineEditor.text()
+        self.crs_value = self.CRS_LineEditor.crs().authid()
         self.crs_funct_to_hide()
 
         try:
@@ -1707,55 +1708,51 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 pass
 
         try:
-            config_message = QMessageBox.about(
-                self, "Configuration Status", "* Processed Data Created *"
+            continue_msg = QMessageBox.question(
+                self,
+                "App status",
+                "Do you want to continue?",
+                QMessageBox.Yes | QMessageBox.Retry | QMessageBox.No,
             )
-            if config_message == None:
-                continue_msg = QMessageBox.question(
-                    self,
-                    "App status",
-                    "Do you want to continue?",
-                    QMessageBox.Yes | QMessageBox.Retry | QMessageBox.No,
-                )
-                if continue_msg == QMessageBox.Yes:
-                    try:
-                        if (
-                            self.sender().objectName() == "ShapeButton"
-                            and self.reloader == "Reload_btnPush"
-                        ):
-                            self.Saveconfig_pushButton.disconnect()
-                            self.ShapeButton.disconnect()
-                        elif (
-                            self.sender().objectName() == "GeojsonButton"
-                            and self.reloader == "Reload_btnPush"
-                        ):
-                            self.Saveconfig_pushButton.disconnect()
-                            self.GeojsonButton.disconnect()
-                        else:
-                            pass
-                    except:
+            if continue_msg == QMessageBox.Yes:
+                try:
+                    if (
+                        self.sender().objectName() == "ShapeButton"
+                        and self.reloader == "Reload_btnPush"
+                    ):
+                        self.Saveconfig_pushButton.disconnect()
+                        self.ShapeButton.disconnect()
+                    elif (
+                        self.sender().objectName() == "GeojsonButton"
+                        and self.reloader == "Reload_btnPush"
+                    ):
+                        self.Saveconfig_pushButton.disconnect()
+                        self.GeojsonButton.disconnect()
+                    else:
                         pass
-                    QMessageBox.about(
-                        self,
-                        "Server Execution",
-                        "* Enable map2loop and loopstructural*",
-                    )
-                    self.LoopStructural_Button.setEnabled(True)
-                    self.Map2Loop_Button.setEnabled(True)
-                    self.Saveconfig_pushButton.setEnabled(False)
-
-                elif continue_msg == QMessageBox.Retry:
-                    self.retryButton.append(self.sender().objectName())
-                    QMessageBox.about(self, "Reset status", "* Reset all push button*")
-                    self.Saveconfig_pushButton.setEnabled(False)
-                    reset_all_features(self)
-                    self.DTMButton.setEnabled(False)
-                elif continue_msg == QMessageBox.No:
-                    self.close()
-                else:
+                except:
                     pass
+                # QMessageBox.about(
+                #     self,
+                #     "Server Execution",
+                #     "* Enable map2loop and loopstructural*",
+                # )
+                self.LoopStructural_Button.setEnabled(True)
+                self.Map2Loop_Button.setEnabled(True)
+                self.Saveconfig_pushButton.setEnabled(False)
+
+            elif continue_msg == QMessageBox.Retry:
+                self.retryButton.append(self.sender().objectName())
+                QMessageBox.about(self, "Reset status", "* Reset all push button*")
+                self.Saveconfig_pushButton.setEnabled(False)
+                reset_all_features(self)
+                self.DTMButton.setEnabled(False)
+            elif continue_msg == QMessageBox.No:
+                self.close()
             else:
                 pass
+            # else:
+            #     pass
         except:
             pass
 
@@ -1893,24 +1890,24 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     or self.sender_name == "DTMButton"
                     and self.dtm == "Qgis_checkBox"
                 ):
-
+                    # try:
                     self.csv_file = [
                         a
                         for a in glob.glob(str(Path(self.GeolPath).parent) + "\*")
                         if "_colours.csv" in str(a)
                     ][0]
-
                     self.hjson_file = [
                         a
                         for a in glob.glob(str(Path(self.GeolPath).parent) + "\*")
                         if ".hjson" in str(a)
                     ][0]
-                    #
+
                     for file_to_move in [
                         self.csv_file,
                         self.hjson_file,
                         self.DTM_filename,
                     ]:
+                        # print(f"I am moving {file_to_move} -->: {process_source_data}")
                         shutil.copy(file_to_move, process_source_data)
             except:
                 pass
@@ -1926,9 +1923,8 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 )
                 # create the geojson file associated with the above shapefile
                 create_geojson_file(strip_file, filename, process_source_data)
-
             self.file_to_keep = glob.glob(str(process_source_data) + "/*")
-            QMessageBox.about(self, "Data Creation", "Data type selection?")
+            # QMessageBox.about(self, "Data Creation", "Data type selection?")
 
             self.retryButton = []
 
@@ -2006,6 +2002,20 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             self.val = value
         return self.val
+
+    def create_local_remote_serverbutton(self):
+        # Create a message box
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Execution Server!")
+        # Add Yes and No buttons, but we will modify their text
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        # Change the button text
+        msg_box.button(QMessageBox.Yes).setText("Local Server")
+        msg_box.button(QMessageBox.No).setText("Remote Server")
+        # Execute the message box and check the result
+        reply = msg_box.exec_()
+        return reply
 
     def Layer_value_selector(
         self, label_ref, Sill_LineEditor, Intrusion_LineEditor, default1, default2
@@ -2212,14 +2222,18 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         project_path = "..\\" + "/".join(str(source_path).split("/")[-1:])
         working_projection = str(self.crs_value)
         out_dir = project_path
+        ## Top and base value are hardcoded
+        minx, miny, maxx, maxy = extract_bbox(self.DTM_filename)
+        print(f"here is the data: ", minx, miny, maxx, maxy)
         bbox_3d = {
-            "minx": 520000,
-            "miny": 7490000,
-            "maxx": 550000,
-            "maxy": 7510000,
+            "minx": minx,
+            "miny": miny,
+            "maxx": maxx,
+            "maxy": maxy,
             "base": -3200,
             "top": 1200,
         }
+        print("bbox_3d: ", bbox_3d)
         run_flags = {
             "aus": True,
             "close_dip": -999.0,
@@ -2252,6 +2266,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             "roi_clip_path": "",
         }
         proj_crs = str(self.crs_value)
+        # print("CRS value is: ", proj_crs)
         clut_path = ""
         qgz_file = "../source_data/map2loop.qgz"
         qgz_split_name = qgz_file.split("/")[-1]
@@ -2346,6 +2361,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             project_run,
             copyqgzfile,
         )
+
         if self.dtm == "AU":
             self.docker_config_file = {
                 "bounding_box": str(bbox_3d),
@@ -2364,24 +2380,39 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "hjson_file": "server_" + str(Path(self.hjson_file).name),
             }
         else:
-
-            self.docker_config_file = {
-                "bounding_box": str(bbox_3d),
-                "run_flags": str(run_flags),
-                "project_path": str(project_path),
-                "working_projection": str(working_projection),
-                "geology_filename": "server_" + str(Path(self.GeolPath).name),
-                "structure_filename": "server_" + str(Path(self.StructPath).name),
-                "fault_filename": "server_" + str(Path(self.FaultPath).name),
-                "fold_filename": "server_" + str(Path(self.FaultPath).name),
-                "metadata_filename": "server_data.json",
-                "mindep_filename": str(mindep_filename),
-                "dtm_filename": "server_" + str(Path(self.DTM_filename).name),
-                "verbose_level": "VerboseLevel.NONE",
-                "csv_file": "server_" + str(Path(self.csv_file).name),
-                "hjson_file": "server_" + str(Path(self.hjson_file).name),
-            }
-
+            if self.result == None:
+                print("I am here: 200000")
+                self.docker_config_file = {
+                    "bounding_box": str(bbox_3d),
+                    "run_flags": str(run_flags),
+                    "project_path": str(project_path),
+                    "working_projection": str(working_projection),
+                    "geology_filename": "server_" + str(Path(self.GeolPath).name),
+                    "structure_filename": "server_" + str(Path(self.StructPath).name),
+                    "fault_filename": "server_" + str(Path(self.FaultPath).name),
+                    "fold_filename": "server_" + str(Path(self.FaultPath).name),
+                    "metadata_filename": "server_data.json",
+                    "mindep_filename": str(mindep_filename),
+                    "dtm_filename": "server_" + str(Path(self.DTM_filename).name),
+                    "verbose_level": "VerboseLevel.NONE",
+                }
+            else:
+                self.docker_config_file = {
+                    "bounding_box": str(bbox_3d),
+                    "run_flags": str(run_flags),
+                    "project_path": str(project_path),
+                    "working_projection": str(working_projection),
+                    "geology_filename": "server_" + str(Path(self.GeolPath).name),
+                    "structure_filename": "server_" + str(Path(self.StructPath).name),
+                    "fault_filename": "server_" + str(Path(self.FaultPath).name),
+                    "fold_filename": "server_" + str(Path(self.FaultPath).name),
+                    "metadata_filename": "server_data.json",
+                    "mindep_filename": str(mindep_filename),
+                    "dtm_filename": "server_" + str(Path(self.DTM_filename).name),
+                    "verbose_level": "VerboseLevel.NONE",
+                    "csv_file": "server_" + str(Path(self.csv_file).name),
+                    "hjson_file": "server_" + str(Path(self.hjson_file).name),
+                }
         return self.docker_config_file
 
 

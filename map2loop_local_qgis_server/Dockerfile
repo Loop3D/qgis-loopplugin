@@ -9,11 +9,20 @@ RUN apt-get update -qq && \
     g++ \
     libc-dev \
     make 
-
+###
 RUN conda install -c conda-forge gdal numpy scipy python=3.9 -y
-RUN conda install -c conda-forge -c loop3d map2loop -y
+
+#RUN conda install -c conda-forge -c loop3d map2loop -y
+RUN git clone https://github.com/Loop3D/map2loop.git && cd map2loop && conda install -c loop3d --file dependencies.txt && pip install -e .
+#RUN conda install -c conda-forge -c loop3d map2loop=3.1.12 loopprojectfile=0.1.3 -y
+# RUN conda install --override-channels -c loop3d -c conda-forge map2loop=3.1.12 -y
+
+# RUN conda install -c conda-forge -c loop3d map2loop=3.1.12 -y
+# RUN pip install loopprojectfile==0.1.3
+
+
 RUN pip install websockets\
-                matplotlib 
+    matplotlib 
 
 # copy server into the container
 COPY server ./server

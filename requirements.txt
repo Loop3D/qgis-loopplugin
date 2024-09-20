@@ -12,3 +12,7 @@ base64
 processing
 geopandas
 webbrowser
+pyvista
+pyvistaqt
+panel
+rasterio

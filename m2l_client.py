@@ -116,6 +116,7 @@ async def map2loop_executor(conf_param, ip_adress, port_number):
             resp = await socket.recv()
             resp = json.loads(resp)
             if resp["success"]:
+                print("Now trying to run map executor: response=success")
                 map2loop_execution_msg.append(resp["response"])
                 map2loop_output.append(resp["output_data"])
             else:
@@ -206,10 +207,7 @@ def m2l_client_main(
             self.map2loop_log_TextEdit.append(
                 "Let the magic happen!! " + str(ip_adress) + "\n"
             )
-            # self.processed_data = (
-            #     local_data_path + "/process_source_data_" + str(self.dt_string)
-            # )
-            time.sleep(0.05)
+
             list_of_data = glob.glob(
                 local_data_path + "/process_source_data_" + str(self.dt_string) + "/*"
             )
@@ -231,6 +229,7 @@ def m2l_client_main(
             )
 
             for file, filepath in zip(filename, list_of_data):
+                print(f"Index is {idx}")
                 print(
                     f"STATUS: Moving <<{file}>> to map2loop server source data - JOB: completed"
                 )
@@ -250,13 +249,16 @@ def m2l_client_main(
                         str(all_data_uploaded_msg[0]) + "\n"
                     )
                 idx += 1
-
-            (
-                map2loop_output,
-                map2loop_execution_msg,
-            ) = asyncio.new_event_loop().run_until_complete(
-                map2loop_executor(str(config_param), ip_adress, port_number)
-            )
+            time.sleep(0.05)
+            try:
+                (
+                    map2loop_output,
+                    map2loop_execution_msg,
+                ) = asyncio.new_event_loop().run_until_complete(
+                    map2loop_executor(str(config_param), ip_adress, port_number)
+                )
+            except:
+                print("ERROR in MAP2LOOP EXECUTOR")
             self.map2loop_log_TextEdit.append(str(map2loop_execution_msg[0]) + "\n")
 
             data_str = map2loop_output[0].replace(" ", "")
