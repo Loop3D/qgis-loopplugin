@@ -175,6 +175,8 @@ class Loop_plugin:
 
         # will be set False in run()
         self.first_start = True
+        # Set DPI Awareness
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         ####----
         # Set DPI Awareness
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
