@@ -40,6 +40,19 @@ def check_message_format_valid(message):
 	return True
 
 
+def clear_folder(folder_path):
+	''' This function is used to clear folder after it is received locally'''
+	for filename in os.listdir(folder_path):
+		file_path = os.path.join(folder_path, filename)
+		# Check if it's a file and delete it
+		if os.path.isfile(file_path):
+			if '__init__.py' in str(file_path):
+				pass
+			else:
+				os.remove(file_path)
+				print(f"Deleted file: {file_path}")
+	return 
+
 def list_files(directory_path):
 	files = []
 	for file_name in os.listdir(directory_path):
@@ -182,6 +195,15 @@ async def handler(socket):
 			await socket.send(json.dumps(response))
 
 		elif package["function"] == "FULL":
+			print('The package data file are:',package["function"])
+			source_data_path = './server/source_data'
+			output_data_path = './output_data/vtk'
+			try:
+				for folder_path in [source_data_path,output_data_path]:
+					clear_folder(folder_path)
+			except:
+				print(f"Cant delete the file in folders")
+
 			response["response"] = f"FULL message recieved ({package['client_id']})"
 			await socket.send(json.dumps(response))
 

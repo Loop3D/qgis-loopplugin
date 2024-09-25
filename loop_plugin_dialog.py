@@ -470,7 +470,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # 3- run map2loop/loopstructural and push back the result
         """
         self.docker_config = self.docker_config_file
-        print("I am here and self. docker_config_file", self.docker_config_file)
         try:
             if (
                 self.sender().objectName() == "Map2Loop_Button"

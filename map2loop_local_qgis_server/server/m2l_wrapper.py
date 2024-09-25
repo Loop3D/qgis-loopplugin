@@ -35,10 +35,6 @@ class M2l_Wrapper:
         config_data = self.param_conf
         print("config_data: ", config_data)
         bbox_3d = ast.literal_eval(config_data["bounding_box"])
-        print("bbox_3d: ", bbox_3d)
-        # Renaming the filename so that it match the docker filenames
-        print('config_data["geology_filename"]: ', config_data["geology_filename"])
-
         # Initialise the project with the shapefiles, dtm, config file
         # output locations and projection to work in
         proj = Project(

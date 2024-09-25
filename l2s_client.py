@@ -96,6 +96,33 @@ async def data_uploader(
     return end_upload_msg
 
 
+async def clear_data(ip_adress, port_number):
+    """This function is used to clear data (from the container after local upload is received)
+    UPLOAD your shape and dtm data to the server source_data folder
+    # ip_adress  : host ip address
+    # port_number: server ip address
+    """
+    uri = "ws://" + str(ip_adress) + ":" + str(port_number)
+    async with websockets.connect(uri) as socket:
+        try:
+            package = {
+                "client_id": 1,
+                "project_id": 1,
+                "function": "FULL",
+                "params": "",
+                "filename": "",
+                "Length": "",
+            }
+            await socket.send(json.dumps(package))
+            resp = await socket.recv()
+            resp = json.loads(resp)
+            print("server response:", resp["response"])
+            # Check whether all data are uploaded into the server
+        except Exception as e:
+            print(e)
+    return
+
+
 async def map2loop_executor(conf_param, ip_adress, port_number):
     """This function is used to execute map2loop within the container
     # conf_param : configuration parameters need to execute map2loop
@@ -285,9 +312,7 @@ def l2s_client_main(
                 self.dictionary[i.split(":")[0].strip("'").replace('"', "")] = i.split(
                     ":"
                 )[1].strip("\"'")
-            # print("data downloaded from server is: ", self.dictionary)
 
-            # Download data from the server/docker container
             index = 1  # Index for file counts
             nbre_server_data_to_pc = len(self.dictionary)  #  Nbre of result output
             incoming_flag = (
@@ -318,7 +343,15 @@ def l2s_client_main(
                         str(all_data_uploaded_msg[0]) + "\n"
                     )
                     self.Reload_btnPush.setVisible(True)
+            try:
+                print(f"Upload status: {all_data_uploaded_msg[0]}")
 
+                # Clear data source and ouput inside the container
+                asyncio.new_event_loop().run_until_complete(
+                    clear_data(ip_adress, port_number)
+                )
+            except:
+                pass
     except:
         self.map2loop_log_TextEdit.setVisible(True)
         network_message = [
