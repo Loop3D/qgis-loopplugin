@@ -1,0 +1,87 @@
+{
+"Orientations_dictionary": {
+"d_params": ["dip", "INCLINATIO", "INCLINATN"],
+"d_help": "Default Dip: field that contains dip information.",
+"dd_params": ["azimuth2", "azimuth", "dip direction", "AZIMUTH_TR", "STRIKE"],
+"dd_help": "Dip Direction: field that contains dip direction information.",
+"sf_params": ["feature", "ObsType", "codedescpt", "STRUCTURE_", "DESCRIPT", "SUB_TYPE", "SUBFEATURE"],
+"sf_help": "Feature: field that contains information on type of structure.",
+"bo_params": ["structypei", "NEWBGSVS2", "deform", "Blah", "YOUNGING", "DESCRIPT", "No_col", "ATTITUDE"],
+"bo_help": "Dip Diection type: field that contains type of foliation.",
+"otype_params": ["dip direction", "FeatureCodeDesc", "strike"],
+"otype_help": "Dip Direction Convention*: flag to determine measurement convention (currently <strike> or <dip direction>).",
+"bedding_params": ["Bed", "Strata", "bedding", "beding"],
+"bedding_help": "Bedding flag: text to search for in field defined by sf code to show that this is a bedding measurement.",
+"btype_params": ["BEOI", "Blah", "Group_Suit", "-", "overturned", "over"],
+"btype_help": "Overturned flag: text to search for in field defined by bo code to show that this is an overturned bedding measurement."
+},
+"ids_dictionary": {
+"o_params": ["objectid", "unique_id", "ID", "No_col", "GEOGRAPHIC"],
+"o_help": "Polygon ID: object id.",
+"gi_params": ["gi", "geopnt_id", "objectid", "ID", "FIELD_STRU", "No_col", "STATION_ID"],
+"gi_help": "Point ID: object id for structures."
+},
+"Fault_and_folds": {
+"fault_params": ["Fault", "ault", "S"],
+"fault_help": "Fault flag: text to search for in field defined by f code to show that this is a fault",
+"fdipest_vals_params": ["gentle", "NORTH_EAST", "Moderate", "Listric", "Steep", "Vertical", "No_col", "0", "shallow,steep,vertical"],
+"dipest_vals_help": "Fdipest flag: text to search for in field defined by fdipest to give fault dip estimate in increasing steepness",
+"fdip_params": ["dip", "CaptureScale", "No_col", "fixed"],
+"fdip_help": "Default Dip*: field for numeric fault dip value.",
+"fdipdir_params": ["dip_dir", "faultdipdi", "DipDirection", "No_col", "0"],
+"fdipdir_help": "Dip Direction*: field for text fault dip direction value.",
+"ff_params": ["feature", "CATEGORY", "codedescpt", "Type", "DESCRIPTIO", "FEATURETYP"],
+"ff_help": "Feature*: field that contains information on type of structure.",
+"fdipest_params": ["dip_est", "HWALL_ROSE", "faultdipan", "Dip", "No_col", "0"],
+"fdipest_help": "Fdipest: field for text fault dip estimate value."
+},
+"stratigraphy_dictionary":{
+"c_params": ["unitname", "FM_EQ_D", "unit_name", "LithDescn1", "STRATNAME", "SYMBOL", "FORMATTED_", "LABEL"],
+"c_help": "Formation*: field that contains finer stratigraphic coding.",
+"g_params": ["group_", "MAX_PERIOD", "sub_provin", "Super_Grou", "PARENTNAME", "SUPERGROUP", "No_col", "MAX_AGE"],
+"g_help": "Group: field that contains coarser stratigraphic coding.",
+"g2_params": ["supergroup", "supersuite", "Super_Grou", "MAX_EPOCH", "Formation_", "GRP", "INTERPRETA", "MIN_AGE"],
+"g2_help": "Supergroup: field that contains alternate coarser stratigraphic coding if <g> is blank.",
+"ds_params": ["descriptn", "RANK", "deposition", "Symbol", "STRATDESC", "DESCRIPT", "TEXT_DESCR", "LITH_LIST"],
+"ds_help": "Description: field that contains information about lithology.",
+"u_params": ["code", "RCS", "nsw_code", "RockCatego", "MAINUNIT", "SYMBOL", "ABBREVIATE", "MAP_THEME"],
+"u_help": "FM code: field that contains alternate stratigraphic coding.",
+"r1_params": ["rocktype1", "RCS_ORIGIN", "class", "LithOther", "No_col", "RANK", "LITH_LIST"],
+"r1_help": "Rocktype 1: field that contains extra lithology information.",
+"r2_params": ["rocktype2", "No_col", "igneous_ty", "dolerite", "TYPE", "GENESIS"],
+"r2_help": "Rocktype 1: field that contains even more lithology information.",
+"sill_params": ["sill", "intrusive"],
+"sill_help": "Sill: text to search for in field defined by ds code to show that this is a sill.",
+"intrusive_params": ["granite", "IGNEOUS", "intrusive", "volc", "granit", "Intrusion"],
+"intrusive_help": "Intrusion: text to search for in field defined by r1 code to show that this is an intrusion.",
+"volcanic_params": ["volcanic", "volc", "ID"],
+"volcanic_help": "text to search for in field defined by ds code to show that this is a volcanic (not intrusion)."
+},
+"timing":{
+    "min_params": ["min_age_ma", "MIN_TIME_Y", "top_end_ag", "AgeMin", "RELAGE", "MINAGE", "No_col", "RM_AGE"],
+    "min_help": "Min Age: field that contains minimum age of unit defined by ccode.",
+    "max_params": ["max_age_ma", "MAX_TIME_Y", "base_start", "AgeMax", "RELAGE", "MAXAGE", "No_col", "RM_AGE"],
+    "max_help": "Max Age: field that contains maximum age of unit defined by ccode."
+},
+"geology_params":{
+    "pluton_dip_help": "pluton_dip (int)[45]: In degrees: default pluton contact dip.",
+    "pluton_form_help": "pluton_form(str)['domes']: Possible forms from domes, saucers or pendant.",
+    "intrusion_mode_help": "intrusion_mode(int): [1] to exclude all intrusions from basal contacts, [0] to only exclude sills.",
+    "max_thick_allowd_help": "max_thickness_allowed(int)[10000]: When estimating local formation thickness in metres.",
+    "thickness_buffer_help": "thickness_buffer(int)[5000]: In metres: How far away to look for next highest unit when calculating formation thickness.",
+    "contact_decimate_help": "contact_decimate(int)[5]: Save every nth contact data point. 0 means save all data.",
+    "contact_dip_help": "contact_dip(int)[-999]: In degrees: Dip to assign to all new basal contact orientations. If -999 then the nearest interpolated dip for that supergroup will be used instead.",
+    "ctct_ori_decimat_help": "contact_orientation_decimate(int)[5]: Save every nth contact orientation point. 0 means save all data.",
+    "misorientation_help": "misorientation(int)[30]: Maximum misorientation in pole to great circle of bedding between groups to be considered part of same supergroup."
+},
+"fault_params":{
+"fault_dip_help": "Default fault dip in degrees. [90]",	
+"fault_decimate_help": "Save every nth fault data point along fault trace. 0 means save all data. [5]",
+"min_fault_length_help": "Minimum fault length in meters to be considered. [5000]"
+},
+"struct_params":{
+    "misorientation_help": "Maximum misorientation in pole to great circle of bedding between groups to be considered part of same supergroup (int) [30]",
+    "ori_decimate_help": "Save every nth orientation data point. 0 means save all data. (int) [0]"
+}
+}  
+

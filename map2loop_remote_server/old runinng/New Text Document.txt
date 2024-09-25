@@ -1,0 +1,34 @@
+#
+RUN apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+    gcc \
+    g++ \
+    libc-dev \
+    make
+
+
+RUN conda config --set solver classic
+RUN conda install -c conda-forge pygeos gdal numpy scipy python=3.10 -y
+RUN conda install -c conda-forge -c loop3d map2loop -y
+
+
+RUN pip install websockets \
+        wget\
+        owslib \
+        matplotlib
+
+
+
+
+
+
+# Set the working directory
+COPY server ./server
+
+# make new directory into your container
+RUN mkdir ./server/source_data
+RUN mkdir ./output_data
+
+
+## Error Failed to process SRS definition: EPSG:28350
+## When you change EPSG value, bbox is invalid..
