@@ -76,13 +76,15 @@ from .feature_import import welcoming_image, list_all_layers, update_file_path
 from .save_to_shp_and_geojson import (
     create_strip_shapefile,
     create_geojson_file,
+    find_clip_files,
+    find_tif_files_with_clip,
+    rename_shapefile,
 )
 from .run_map2loop import hide_map2loop_features, run_client
 from .stop_docker_container import switch_off_docker
 from .scripts.loop.l2s_data_push import (
     push_data_into_l2s_server,
     push_processed_into_loopsource_data,
-    show_3d_plot,
 )
 
 # from .scripts.loop.l2s_docker_info import get_my_docker_infos
@@ -1705,13 +1707,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 pass
 
         try:
-            # continue_msg = QMessageBox.question(
-            #     self,
-            #     "App status",
-            #     "Do you want to continue?",
-            #     QMessageBox.Yes | QMessageBox.Retry | QMessageBox.No,
-            # )
-            # if continue_msg == QMessageBox.Yes:
             try:
                 if (
                     self.sender().objectName() == "ShapeButton"
@@ -1892,14 +1887,15 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                         for a in glob.glob(str(Path(self.GeolPath).parent) + "\*")
                         if ".hjson" in str(a)
                     ][0]
-
-                    for file_to_move in [
+                    extra_data_list = [
                         self.csv_file,
                         self.hjson_file,
                         self.DTM_filename,
-                    ]:
-                        # print(f"I am moving {file_to_move} -->: {process_source_data}")
+                    ]
+                    for file_to_move in extra_data_list:  # [
                         shutil.copy(file_to_move, process_source_data)
+                else:
+                    pass
             except:
                 pass
 
@@ -1907,7 +1903,46 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             for file, field_to_keep in zip(list_of_file, list_to_strip):
                 find_the_layer_name = str(file).rpartition("/")
                 filename = find_the_layer_name[2].split(".")[0]
+                print(f"file is : {file} and its filename is : {filename}")
+                #  checking if roi where used to update the filename
+                try:
+                    if self.clip_signal == "Ok_ClipLayer":
 
+                        print(
+                            f"We are now counting for clipped data {self.clip_signal}"
+                        )
+                        # Example usage
+                        directory_to_search = self.first_parent_folder
+
+                        (
+                            self.clip_count,
+                            clipped_names,
+                            self.clip_tif_count,
+                            clipped_tif_names,
+                        ) = find_clip_files(directory_to_search)
+                        print(f" nbre of _clip found is: {self.clip_count}")
+                        print(f" nbre of _clip_tif found is: {self.clip_tif_count}")
+                        if self.clip_tif_count != 0:
+                            self.tif_file = (
+                                str(directory_to_search)
+                                + "\\"
+                                + str(clipped_tif_names[0])
+                            )
+                            print(f"tif file is {self.tif_file}")
+                            shutil.copy(self.tif_file, process_source_data)
+                        # # Find all names in the list where filename is a part of clipped_name
+                        matching_names = [
+                            name for name in clipped_names if filename in name
+                        ]
+
+                        # Output the result
+                        if matching_names:
+                            print(f"Selected names: {matching_names}")
+                        else:
+                            print(f"{filename} is not found in any names")
+                        filename = matching_names[0].split(".")[0]
+                except:
+                    filename = filename
                 # create new strip shapefile
                 strip_file = create_strip_shapefile(
                     file, field_to_keep, filename, process_source_data
@@ -2213,8 +2248,21 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         working_projection = str(self.crs_value)
         out_dir = project_path
         ## Top and base value are hardcoded
-
         minx, miny, maxx, maxy = extract_bbox(self, self.DTM_filename)
+        clipped_state = False
+        # Update bbo and clipped_state
+        try:
+            if (
+                self.clip_signal == "Ok_ClipLayer"
+                and self.sender().objectName() == "Saveconfig_pushButton"
+            ):
+                clipped_state = True
+                # print("update data here: ", Path(structure_filename).name)
+                minx, miny, maxx, maxy = extract_bbox(self, self.tif_file)
+
+        except:
+            pass
+
         bbox_3d = {
             "minx": minx,
             "miny": miny,
@@ -2223,7 +2271,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             "base": -3200,
             "top": 1200,
         }
-
         run_flags = {
             "aus": True,
             "close_dip": -999.0,
@@ -2252,7 +2299,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             "use_interpolations": False,
             "fault_orientation_clusters": 2,
             "fault_length_clusters": 2,
-            "use_roi_clip": False,
+            "use_roi_clip": clipped_state,
             "roi_clip_path": "",
         }
         proj_crs = str(self.crs_value)
@@ -2341,7 +2388,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             + "'"
             + ")"
         )
-
         save_a_python_file(
             self,
             self.filepath,
@@ -2369,6 +2415,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "csv_file": "server_" + str(Path(self.csv_file).name),
                 "hjson_file": "server_" + str(Path(self.hjson_file).name),
             }
+
         else:
             if self.result == None:
                 self.docker_config_file = {
@@ -2402,6 +2449,30 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     "csv_file": "server_" + str(Path(self.csv_file).name),
                     "hjson_file": "server_" + str(Path(self.hjson_file).name),
                 }
+                try:
+                    if self.clip_signal == "Ok_ClipLayer":
+                        self.docker_config_file = {
+                            "bounding_box": str(bbox_3d),
+                            "run_flags": str(run_flags),
+                            "project_path": str(project_path),
+                            "working_projection": str(working_projection),
+                            "geology_filename": "server_"
+                            + str(Path(geology_filename).name),
+                            "structure_filename": "server_"
+                            + str(Path(structure_filename).name),
+                            "fault_filename": "server_"
+                            + str(Path(fault_filename).name),
+                            "fold_filename": "server_" + str(Path(fault_filename).name),
+                            "metadata_filename": "server_data.json",
+                            "mindep_filename": str(mindep_filename),
+                            "dtm_filename": "server_" + str(Path(dtm_filename).name),
+                            "verbose_level": "VerboseLevel.NONE",
+                            "csv_file": "server_" + str(Path(self.csv_file).name),
+                            "hjson_file": "server_" + str(Path(self.hjson_file).name),
+                        }
+
+                except:
+                    pass
         return self.docker_config_file
 
 

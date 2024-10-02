@@ -24,21 +24,21 @@ def create_geojson_file(outfile, filename, data_path):
     return
 
 
-def create_data_for_no_del_col(parent_path, process_source_data):
-    """
-    This function is used to push process data into the new folder when col_to_del =[] (empty list)
-    """
-    process_data = glob.glob(str(parent_path) + "/*")
-    # Filter out directories from the list
-    proc_data = [f for f in process_data if not Path(f).is_dir()]
-    for file in proc_data:
-        name = str(os.path.basename(file))
-        path = str(process_source_data) + "\\" + str(name)
-        if os.path.exists(path):
-            pass
-        else:
-            shutil.copy(file, process_source_data)
-    return
+# def create_data_for_no_del_col(parent_path, process_source_data):
+#     """
+#     This function is used to push process data into the new folder when col_to_del =[] (empty list)
+#     """
+#     process_data = glob.glob(str(parent_path) + "/*")
+#     # Filter out directories from the list
+#     proc_data = [f for f in process_data if not Path(f).is_dir()]
+#     for file in proc_data:
+#         name = str(os.path.basename(file))
+#         path = str(process_source_data) + "\\" + str(name)
+#         if os.path.exists(path):
+#             pass
+#         else:
+#             shutil.copy(file, process_source_data)
+#     return
 
 
 def create_strip_shapefile(filepath, field_to_keep, filename, data_path):
@@ -68,6 +68,7 @@ def create_strip_shapefile(filepath, field_to_keep, filename, data_path):
 
     ## define the new file name
     outfile = str(data_path) + "\\" + str(filename) + ".shp"
+
     parameter_for_extract = {
         "INPUT": str(filepath),
         "COLUMN": columns_to_delete,
@@ -87,3 +88,87 @@ def create_strip_shapefile(filepath, field_to_keep, filename, data_path):
     else:
         output = processing.run("native:deletecolumn", parameter_for_extract)
     return outfile
+
+
+def count_clip_occurrences(filename):
+    # Count how many times '_clip' appears in the filename
+    return filename.count("_clip")
+
+
+def find_clip_files(directory):
+    # Find all files that contain '_clip' in their names
+    clip_files = glob.glob(os.path.join(directory, "*_clip*"))
+    clip_tif_files = glob.glob(os.path.join(directory, "*_clip.tif*"))
+
+    if not clip_files:
+        return []  # Return an empty list if no _clip files exist
+
+    if not clip_tif_files:
+        return []  # Return an empty list if no _clip for tif files exist
+
+    # Create a list of tuples (file, number of _clip appearances)
+    clip_file_counts = [
+        (file, count_clip_occurrences(os.path.basename(file))) for file in clip_files
+    ]
+
+    # Create a list of tuples (file, number of _clip appearances)
+    clip_tif_file_counts = [
+        (file, count_clip_occurrences(os.path.basename(file)))
+        for file in clip_tif_files
+    ]
+
+    # Find the maximum number of _clip appearances
+    max_clip_count = max(count for file, count in clip_file_counts)
+
+    # Find the maximum number of _clip appearances
+    max_clip_tif_count = max(count for file, count in clip_tif_file_counts)
+
+    # Select files with the highest _clip count
+    selected_files = [
+        file for file, count in clip_file_counts if count == max_clip_count
+    ]
+
+    selected_tif_files = [
+        file for file, count in clip_tif_file_counts if count == max_clip_tif_count
+    ]
+
+    clipped_names = [Path(a).name for a in selected_files]
+    clipped_tif_names = [Path(a).name for a in selected_tif_files]
+    return max_clip_count, clipped_names, max_clip_tif_count, clipped_tif_names
+
+
+def find_tif_files_with_clip(directory):
+    # Find all .tif and .gif files in the directory
+    tif_gif_files = glob.glob(os.path.join(directory, "*.tif")) + glob.glob(
+        os.path.join(directory, "*.gif")
+    )
+
+    # Filter files that contain '_clip' in their names
+    clip_files = [file for file in tif_gif_files if "_clip" in os.path.basename(file)]
+
+    return clip_files
+
+
+def rename_shapefile(file_path, L):
+    # Split the file name and extension
+    file_name, file_extension = os.path.splitext(file_path)
+
+    # Ensure that the file has the correct ".shp" extension
+    if file_extension.lower() != ".shp":
+        raise ValueError("The file is not a shapefile (.shp)")
+
+    # Add '_clip' multiple times based on L
+    new_suffix = "_clip" * L
+
+    # Create the new file name with the ".shp" extension
+    new_file_name = file_name + new_suffix + file_extension
+
+    # Rename the file
+    os.rename(file_path, new_file_name)
+
+    print(f"File renamed to: {new_file_name}")
+    return new_file_name
+
+
+# Example usage
+# rename_shapefile("geol_clip.shp", L=2)

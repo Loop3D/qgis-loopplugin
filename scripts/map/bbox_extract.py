@@ -7,6 +7,7 @@ from pyproj import Transformer
 def extract_bbox(self, dtm_file):
     # Open the DTM file
     with rasterio.open(dtm_file) as src:
+        print(f"dtm file is {dtm_file}")
         # Get the current CRS of the DTM file
         dtm_crs = src.crs
         # print(f"DTM CRS: {dtm_crs}")
