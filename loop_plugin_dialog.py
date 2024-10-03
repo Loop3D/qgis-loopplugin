@@ -26,7 +26,7 @@ from qgis.core import QgsProject
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from qgis.gui import QgsProjectionSelectionDialog
+from PyQt5.QtCore import Qt
 
 import os, glob, subprocess, time
 from pathlib import Path
@@ -72,13 +72,12 @@ from .create_your_roi import (
     saving_your_roi,
     set_your_clip,
 )
+from .scripts.load_data_from_json import save_param_to_json
 from .feature_import import welcoming_image, list_all_layers, update_file_path
 from .save_to_shp_and_geojson import (
     create_strip_shapefile,
     create_geojson_file,
     find_clip_files,
-    find_tif_files_with_clip,
-    rename_shapefile,
 )
 from .run_map2loop import hide_map2loop_features, run_client
 from .stop_docker_container import switch_off_docker
@@ -111,7 +110,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         #
 
         self.setupUi(self)
-
         hide_all_combo_list(self, 0), welcoming_image(self, 1), hide_dtm_feature(
             self, 0
         ), hide_http(self, 0)
@@ -280,7 +278,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.Map2Loop_Button.setEnabled(False)
         self.LoopStructural_Button.setEnabled(False)
 
-        map2loop_reply = self.create_local_remote_serverbutton()
+        map2loop_reply = self.create_local_remote_serverbutton(
+            "Execution Server!", "Local Server", "Remote Server"
+        )
         if map2loop_reply == QMessageBox.No:
             print("You chose Remote Server!")
             # Here we are using remote machine
@@ -345,7 +345,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # hide log text
         self.map2loop_log_TextEdit.hide()
         # now send data into loop server
-        loop_msg = self.create_local_remote_serverbutton()
+        loop_msg = self.create_local_remote_serverbutton(
+            "Execution Server!", "Local Server", "Remote Server"
+        )
         if loop_msg == QMessageBox.No:
             # Here we are using remote machine
             self.docker_remote_or_local_server_flag = "remote server"
@@ -847,6 +849,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         label_mover(self, geol_comboHeader)
         self.colNames = xlayer_reader(self)
         self.combo_column_appender(self.colNames, self.GeolButton.objectName())
+
+        self.geol_col_dict = {"geology column": self.colNames}
+        # print(f" The geology full data column: {self.geol_col_dict}")
+
         qline_and_label_mover(
             340, 200, 340, 220, " Sill Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -896,6 +902,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         DipDirectionConv_colNames = ["Dip Direction", "Strike"]
         self.cmbRocktype2LayerIDName.clear()
         self.cmbRocktype2LayerIDName.addItems(DipDirectionConv_colNames)
+
+        self.fault_col_dict = {"fault column": self.colNames}
+        # print(f" The fault full data column: {self.fault_col_dict}")
+
         qline_and_label_mover(
             340, 125, 340, 145, " Fault Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -943,6 +953,10 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         DipDirectionConv_colNames = ["Dip Direction", "Strike"]
         self.cmbDescriptionLayerIDName.clear()
         self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)
+
+        self.struc_col_dict = {"structure column": self.colNames}
+        # print(f" The struct full data column: {self.struc_col_dict}")
+
         qline_and_label_mover(
             340, 125, 340, 145, " Bedding Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -1115,8 +1129,9 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         MAIN Geology function
         """
+  
+        self.create_local_remote_serverbutton("Data Channel!", "ALL", "JSON")
 
-        # Update the CRS value
         # crs_name = self.CRS_LineEditor.crs().description()
         self.crs_value = self.CRS_LineEditor.crs().authid()
         # print("value of the crs: ", self.crs_value)
@@ -1728,17 +1743,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.Map2Loop_Button.setEnabled(True)
             self.Saveconfig_pushButton.setEnabled(False)
 
-            # elif continue_msg == QMessageBox.Retry:
-            #     self.retryButton.append(self.sender().objectName())
-            #     QMessageBox.about(self, "Reset status", "* Reset all push button*")
-            #     self.Saveconfig_pushButton.setEnabled(False)
-            #     reset_all_features(self)
-            #     self.DTMButton.setEnabled(False)
-            # elif continue_msg == QMessageBox.No:
-            #     self.close()
-            # else:
-            #     pass
-
         except:
             pass
 
@@ -1762,6 +1766,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
 
         try:
+            json_path = str(self.SearchFolder.text())
             self.fold_data = ["feature", "Fold axial trace", "type", "syncline"]
             self.mindeposit_data = [
                 "site_code",
@@ -1795,6 +1800,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "sill",
                 "intrusive",
             ]
+
             fault_listKeys = [
                 "fdip",
                 "fdipdir",
@@ -1807,6 +1813,28 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "fdipest_vals",
             ]
             struct_listKeys = ["d", "dd", "sf", "otype", "bo", "gi", "bedding", "btype"]
+
+            geol_dict = dict(zip(geol_listKeys, self.geol_data))
+            fault_dict = dict(zip(fault_listKeys, self.fault_data))
+            struct_dict = dict(zip(struct_listKeys, self.struct_data))
+
+            # Combine the dictionaries under labels
+            combined_load_parameter = {
+                "geol_head": geol_dict,
+                "fault_head": fault_dict,
+                "struct_head": struct_dict,
+            }
+
+            # Merge using the ** operator
+            merged_parameter_dict = {
+                **combined_load_parameter,
+                **self.geol_col_dict,
+                **self.fault_col_dict,
+                **self.struc_col_dict,
+            }
+            # print("Merge dictionary is: ", merged_parameter_dict)
+            save_param_to_json(merged_parameter_dict, json_path)
+
             mindeposit_lisKeys = ["msc", "msn", "mst", "mtc", "mscm", "mcom", "minf"]
             fold_lisKeys = ["ff", "fold", "t", "syn"]
             default_keys = ["volcanic", "fdipnull", "n", "deposit_dist"]
@@ -1819,8 +1847,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 + default_keys
             )
             formation_data = dict(zip(AllKeys, self.Alldata))
-            # print('formation_data: ', formation_data)
-            json_path = str(self.SearchFolder.text())
+            print("formation_data: ", formation_data)
 
             # list of data to strip
             list_to_strip = [self.geol_data, self.fault_data, self.struct_data]
@@ -1899,18 +1926,13 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             except:
                 pass
 
-            #
             for file, field_to_keep in zip(list_of_file, list_to_strip):
                 find_the_layer_name = str(file).rpartition("/")
                 filename = find_the_layer_name[2].split(".")[0]
-                print(f"file is : {file} and its filename is : {filename}")
                 #  checking if roi where used to update the filename
                 try:
                     if self.clip_signal == "Ok_ClipLayer":
 
-                        print(
-                            f"We are now counting for clipped data {self.clip_signal}"
-                        )
                         # Example usage
                         directory_to_search = self.first_parent_folder
 
@@ -1920,8 +1942,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                             self.clip_tif_count,
                             clipped_tif_names,
                         ) = find_clip_files(directory_to_search)
-                        print(f" nbre of _clip found is: {self.clip_count}")
-                        print(f" nbre of _clip_tif found is: {self.clip_tif_count}")
+
                         if self.clip_tif_count != 0:
                             self.tif_file = (
                                 str(directory_to_search)
@@ -2028,16 +2049,16 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.val = value
         return self.val
 
-    def create_local_remote_serverbutton(self):
+    def create_local_remote_serverbutton(self, title, msg1, msg2):
         # Create a message box
         msg_box = QMessageBox()
-        msg_box.setWindowTitle("Execution Server!")
+        msg_box.setWindowTitle(str(title))
         # Add Yes and No buttons, but we will modify their text
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
 
         # Change the button text
-        msg_box.button(QMessageBox.Yes).setText("Local Server")
-        msg_box.button(QMessageBox.No).setText("Remote Server")
+        msg_box.button(QMessageBox.Yes).setText(str(msg1))
+        msg_box.button(QMessageBox.No).setText(str(msg2))
         # Execute the message box and check the result
         reply = msg_box.exec_()
         return reply

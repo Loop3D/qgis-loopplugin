@@ -43,6 +43,10 @@ def load_data_when_qgis_is_choosen(self, colname, geol_name, lyr):
             "Max Age",
         ]
         self.combo_column_appender(self.colNames, geol_name)
+
+        self.geol_col_dict = {"geology column": self.colNames}
+        # print(f" The fault full data column: {self.geol_col_dict}")
+
         qline_and_label_mover(
             340, 200, 340, 220, " Sill Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -79,6 +83,10 @@ def load_data_when_qgis_is_choosen(self, colname, geol_name, lyr):
         self.cmbDescriptionLayerIDName.clear(), self.cmbRocktype2LayerIDName.clear()
         self.cmbDescriptionLayerIDName.addItems(DipDirectiontype_colNames)
         self.cmbRocktype2LayerIDName.addItems(DipDirectionConv_colNames)
+
+        self.fault_col_dict = {"fault column": self.colNames}
+        # print(f" The fault full data column: {self.fault_col_dict}")
+
         qline_and_label_mover(
             340, 125, 340, 145, " Fault Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -113,6 +121,10 @@ def load_data_when_qgis_is_choosen(self, colname, geol_name, lyr):
         DipDirectionConv_colNames = ["Dip Direction", "Strike"]
         self.cmbDescriptionLayerIDName.clear()
         self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)
+
+        self.struc_col_dict = {"structure column": self.colNames}
+        # print(f" The fault full data column: {self.struc_col_dict}")
+
         qline_and_label_mover(
             340, 125, 340, 145, " Bedding Text:", self.Sill_Label, self.Sill_LineEditor
         )
