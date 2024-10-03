@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import Qt
-
+import json
 import os, glob, subprocess, time
 from pathlib import Path
 import os.path, shutil
@@ -72,7 +72,16 @@ from .create_your_roi import (
     saving_your_roi,
     set_your_clip,
 )
-from .scripts.load_data_from_json import save_param_to_json
+from .scripts.json_load.load_data_from_json import (
+    save_param_to_json,
+    select_load_json_file,
+    read_json,
+    print_keys_values,
+)
+from .scripts.json_load.activate_qt_feature import (
+    data_from_json_to_cbbox,
+    json_combbox_activate,
+)
 from .feature_import import welcoming_image, list_all_layers, update_file_path
 from .save_to_shp_and_geojson import (
     create_strip_shapefile,
@@ -758,6 +767,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 "Filtered files (*.shp *.SHP *.tif *.TIF *.gpkg)",
             ):
                 shape_file_list.append(shape_file)
+            # try:
             list_of_files = shape_file_list[0]
             self.path_file = list_of_files[0]
             self.colNames = shape_file_loader(list_of_files)
@@ -1129,8 +1139,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         MAIN Geology function
         """
-  
-        self.create_local_remote_serverbutton("Data Channel!", "ALL", "JSON")
 
         # crs_name = self.CRS_LineEditor.crs().description()
         self.crs_value = self.CRS_LineEditor.crs().authid()
@@ -1174,12 +1182,61 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         hide_all_combo_list(self, 0), clear_all_label(self)
         self.params_function_activator(False)
         save_activator(self, 1)
-        hide_dtm_feature(self, 1), welcoming_image(self, 2)
-        reset_qgis_cbox(self, 2), disabled_qgis_chkbox(self)
+        welcoming_image(self, 2)
+        #################################################
+        # welcoming_image(self, 2)
+        load_msg = self.create_local_remote_serverbutton(
+            "Data Channel!", "OTHER", "JSON"
+        )
+        if load_msg == QMessageBox.No:
+            hide_all_combo_list(self, 1)  # , clear_all_label(self)
+            self.params_function_activator(True)
+            geol_comboHeader = [
+                "Formation*",
+                "Group",
+                "Supergroup",
+                "Description",
+                "Fm code",
+                "Rocktype 1",
+                "Rocktype 2",
+                "Polygon ID",
+                "Min Age",
+                "Max Age",
+            ]
+            label_mover(self, geol_comboHeader)
+            qline_and_label_mover(
+                340, 200, 340, 220, " Sill Text:", self.Sill_Label, self.Sill_LineEditor
+            )
+            qline_and_label_mover(
+                340,
+                280,
+                340,
+                300,
+                " Intrusion Text:",
+                self.Intrusion_Label,
+                self.Intrusion_LineEditor,
+            )
+            qlineeditor_default_string(self, "sill", "intrusive")
+            self.json_load_path = select_load_json_file(self)
+            json_data = read_json(str(self.json_load_path))
 
-        self.File_checkBox.stateChanged.connect(self.select_your_geol_method)
-        self.Qgis_checkBox.stateChanged.connect(self.select_your_geol_method)
-        self.Http_checkBox.stateChanged.connect(self.select_your_geol_method)
+            if json_data:
+                full_data = json.dumps(json_data, indent=4)
+            # Call the function to print the key-value pairs
+            geo_par, geo_col = print_keys_values(full_data, "GeolButton")
+            # append data into combobox
+            data_from_json_to_cbbox(self, combo_list(self), geo_par, geo_col)
+            print("OTHER Option is HERE")
+            #########################################################
+        else:
+
+            save_activator(self, 1)
+            hide_dtm_feature(self, 1), welcoming_image(self, 2)
+            reset_qgis_cbox(self, 2), disabled_qgis_chkbox(self)
+
+            self.File_checkBox.stateChanged.connect(self.select_your_geol_method)
+            self.Qgis_checkBox.stateChanged.connect(self.select_your_geol_method)
+            self.Http_checkBox.stateChanged.connect(self.select_your_geol_method)
         return
 
     def save_fault_param(self):
@@ -1386,7 +1443,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def select_your_geol_method(self):
         """
-        This function is used to populate 2 way of loading the geology layer.
+        This function is used to populate 4 way of loading the geology layer.
         """
         try:
             geol_flag = []
