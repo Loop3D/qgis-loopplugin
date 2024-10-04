@@ -57,12 +57,34 @@ def print_keys_values(data, flag):
 	''' 
 	This function load json string, convert it to dict and extract (key, pair) 
 	'''
-	print(flag)
+	#print(flag)
 	# convert string into dictionary
 	data = json.loads(data)
-	if flag=='GeolButton':
-	  geo_par = data['geol_head']
-	  geo_col = data['geology column']
-	  return geo_par,geo_col
-	# print(f" the data for geol_head is {data['geol_head']}")
-	# print(f" the data for geol_column is {data['geology column']}")
+	#print(data)
+	if flag=='Geology':
+		geo_par = data['geol_head']
+		geo_col = data['geology column']
+		geo_path= data["geol_path"]
+		dtm_path= data["dtm_path"]
+		csv_path    = data["csv_path"]
+		hjson_path  = data["hjson_path"]
+		return geo_par,geo_col,geo_path,dtm_path,csv_path,hjson_path
+	elif flag=='Fault':
+		fault_par = data['fault_head']
+		fault_col = data['fault column']
+		fault_path= data["fault_path"]
+		dtm_path= data["dtm_path"]
+		csv_path    = data["csv_path"]
+		hjson_path  = data["hjson_path"]
+		return fault_par,fault_col,fault_path,dtm_path,csv_path,hjson_path
+	elif flag=='Structure':
+		struct_par  = data['struct_head']
+		struct_col  = data['structure column']
+		struct_path = data["struct_path"]
+		dtm_path    = data["dtm_path"]
+		csv_path    = data["csv_path"]
+		hjson_path  = data["hjson_path"]
+		return struct_par,struct_col,struct_path, dtm_path,csv_path,hjson_path
+
+         
+	return

@@ -914,8 +914,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmbRocktype2LayerIDName.addItems(DipDirectionConv_colNames)
 
         self.fault_col_dict = {"fault column": self.colNames}
-        # print(f" The fault full data column: {self.fault_col_dict}")
-
         qline_and_label_mover(
             340, 125, 340, 145, " Fault Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -965,8 +963,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.cmbDescriptionLayerIDName.addItems(DipDirectionConv_colNames)
 
         self.struc_col_dict = {"structure column": self.colNames}
-        # print(f" The struct full data column: {self.struc_col_dict}")
-
         qline_and_label_mover(
             340, 125, 340, 145, " Bedding Text:", self.Sill_Label, self.Sill_LineEditor
         )
@@ -1041,6 +1037,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 for i in range(10):
                     self.fault_data.append(self.my_combo_list[i].currentText())
                 self.fault_data = self.fault_data[0:7] + fault_extra_data
+                # print("Self fault: ", self.fault_data)
                 for i in range(len(self.list_of_params[0:3])):
                     self.data_fault.append(self.list_of_params[i].text())
                     self.list_of_params[i].clear()
@@ -1065,6 +1062,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 for i in range(10):
                     self.struct_data.append(self.my_combo_list[i].currentText())
                 self.struct_data = self.struct_data[0:6] + struct_extra_data
+                # print("Self struct: ", self.struct_data)
                 for i in range(len(self.list_of_params[0:2])):
                     self.data_struct.append(self.list_of_params[i].text())
                     self.list_of_params[i].clear()
@@ -1117,21 +1115,34 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         hide_all_combo_list(self, 0), clear_all_label(self)
         self.params_function_activator(False)
         save_activator(self, 1)
-        hide_dtm_feature(self, 1), welcoming_image(self, 2)
-
+        welcoming_image(self, 2)
+        # hide_dtm_feature(self, 1), welcoming_image(self, 2)
+        self.Structure_checkBox.setChecked(True)
         self.QPushbutton_functionActivator(
             False, self.GeolButton, self.FaultButton, self.StructButton
         ), self.ROIButton.setEnabled(False)
         self.Qgis_checkBox.setChecked(False)
         self.Qgis_checkBox.setEnabled(True)
         self.Qgis_checkBox.setCheckable(True)
-        reset_qgis_cbox(self, 4)
-        disabled_qgis_chkbox(self)
+        #################
+        load_msg = self.create_local_remote_serverbutton(
+            "Data Channel!", "JSON", "OTHER"
+        )
+        if load_msg == QMessageBox.Yes:
 
-        self.File_checkBox.stateChanged.connect(self.select_your_dtm_method)
-        self.Aus_checkBox.stateChanged.connect(self.select_your_dtm_method)
-        self.Http_checkBox.stateChanged.connect(self.select_your_dtm_method)
-        self.Qgis_checkBox.stateChanged.connect(self.select_your_dtm_method)
+            clear_partially_combo_list(self, 6, 0)
+            self.Saveconfig_pushButton.setEnabled(True)
+            self.DTM_checkBox.setChecked(True)
+            self.DTMButton.setEnabled(False)
+        else:
+            hide_dtm_feature(self, 1)
+            reset_qgis_cbox(self, 4)
+            disabled_qgis_chkbox(self)
+
+            self.File_checkBox.stateChanged.connect(self.select_your_dtm_method)
+            self.Aus_checkBox.stateChanged.connect(self.select_your_dtm_method)
+            self.Http_checkBox.stateChanged.connect(self.select_your_dtm_method)
+            self.Qgis_checkBox.stateChanged.connect(self.select_your_dtm_method)
 
         return
 
@@ -1139,10 +1150,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         MAIN Geology function
         """
-
-        # crs_name = self.CRS_LineEditor.crs().description()
         self.crs_value = self.CRS_LineEditor.crs().authid()
-        # print("value of the crs: ", self.crs_value)
         self.crs_funct_to_hide()
         three_push_activator(self, 1)
 
@@ -1183,13 +1191,13 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.params_function_activator(False)
         save_activator(self, 1)
         welcoming_image(self, 2)
-        #################################################
-        # welcoming_image(self, 2)
+        #################### JSON OR OTHER CHANNEL ##########################
         load_msg = self.create_local_remote_serverbutton(
-            "Data Channel!", "OTHER", "JSON"
+            "Data Channel!", "JSON", "OTHER"
         )
-        if load_msg == QMessageBox.No:
-            hide_all_combo_list(self, 1)  # , clear_all_label(self)
+        if load_msg == QMessageBox.Yes:
+            self.json_flag = "LOAD"
+            hide_all_combo_list(self, 1)
             self.params_function_activator(True)
             geol_comboHeader = [
                 "Formation*",
@@ -1219,15 +1227,23 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             qlineeditor_default_string(self, "sill", "intrusive")
             self.json_load_path = select_load_json_file(self)
             json_data = read_json(str(self.json_load_path))
-
             if json_data:
                 full_data = json.dumps(json_data, indent=4)
             # Call the function to print the key-value pairs
-            geo_par, geo_col = print_keys_values(full_data, "GeolButton")
+            (
+                geo_par,
+                geo_col,
+                self.GeolPath,
+                self.DTM_filename,
+                self.csv_file,
+                self.hjson_file,
+            ) = print_keys_values(full_data, "Geology")
+            self.geol_col_dict = {"geology column": geo_col}
+            self.geol_data = list(geo_par.values())
             # append data into combobox
-            data_from_json_to_cbbox(self, combo_list(self), geo_par, geo_col)
-            print("OTHER Option is HERE")
-            #########################################################
+            data_from_json_to_cbbox(self, combo_list(self), geo_par, geo_col, "Geology")
+
+            #####################################################################
         else:
 
             save_activator(self, 1)
@@ -1244,7 +1260,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         MAIN Fault function
         """
         # Update the CRS value
-        # self.crs_value = self.CRS_LineEditor.text()
         self.crs_value = self.CRS_LineEditor.crs().authid()
         self.crs_funct_to_hide()
 
@@ -1282,12 +1297,72 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
         hide_all_combo_list(self, 0), clear_all_label(self)
         self.params_function_activator(False)
-        hide_dtm_feature(self, 1), welcoming_image(self, 2)
-        reset_qgis_cbox(self, 2), disabled_qgis_chkbox(self)
+        self.Geology_checkBox.setChecked(True)
+        load_msg = self.create_local_remote_serverbutton(
+            "Data Channel!", "JSON", "OTHER"
+        )
+        if load_msg == QMessageBox.Yes:
 
-        self.File_checkBox.stateChanged.connect(self.select_your_fault_method)
-        self.Qgis_checkBox.stateChanged.connect(self.select_your_fault_method)
-        self.Http_checkBox.stateChanged.connect(self.select_your_fault_method)
+            hide_all_combo_list(self, 1)
+            self.params_function_activator(True)
+            fault_comboHeader = [
+                "Default Dip",
+                "Dip Direction",
+                "Feature",
+                "Dip Direction type",
+                "Fdipest",
+                "Point ID",
+                "Dip Dir Convention",
+            ]
+            label_mover(self, fault_comboHeader)
+            clear_partially_combo_list(self, 7, 1)
+            clear_partially_combo_list(self, 7, 0)
+            qline_and_label_mover(
+                340,
+                125,
+                340,
+                145,
+                " Fault Text:",
+                self.Sill_Label,
+                self.Sill_LineEditor,
+            )
+            qline_and_label_mover(
+                340,
+                185,
+                340,
+                205,
+                " fdipest Text:",
+                self.Intrusion_Label,
+                self.Intrusion_LineEditor,
+            )
+            qlineeditor_default_string(self, "Fault", "shallow,steep,vertical")
+            self.json_load_path = select_load_json_file(self)
+            json_data = read_json(str(self.json_load_path))
+            if json_data:
+                full_data = json.dumps(json_data, indent=4)
+            # Call the function to print the key-value pairs
+            (
+                fault_par,
+                fault_col,
+                self.FaultPath,
+                self.DTM_filename,
+                self.csv_file,
+                self.hjson_file,
+            ) = print_keys_values(full_data, "Fault")
+            self.fault_col_dict = {"fault column": fault_col}
+            self.fault_data = list(fault_par.values())
+            # append data into combobox
+            data_from_json_to_cbbox(
+                self, combo_list(self), fault_par, fault_col, "Fault"
+            )
+            #####################################################################
+        else:
+            hide_dtm_feature(self, 1), welcoming_image(self, 2)
+            reset_qgis_cbox(self, 2), disabled_qgis_chkbox(self)
+
+            self.File_checkBox.stateChanged.connect(self.select_your_fault_method)
+            self.Qgis_checkBox.stateChanged.connect(self.select_your_fault_method)
+            self.Http_checkBox.stateChanged.connect(self.select_your_fault_method)
         return
 
     def save_struct_param(self):
@@ -1295,7 +1370,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         MAIN Structure function
         """
         # Update the CRS value
-        # self.crs_value = self.CRS_LineEditor.text()
         self.crs_value = self.CRS_LineEditor.crs().authid()
         self.crs_funct_to_hide()
 
@@ -1335,12 +1409,72 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             pass
 
         self.Aus_checkBox.setEnabled(False)
-        hide_dtm_feature(self, 1), welcoming_image(self, 2)
-        reset_qgis_cbox(self, 2)
-        disabled_qgis_chkbox(self)
-        self.File_checkBox.stateChanged.connect(self.select_your_struct_method)
-        self.Qgis_checkBox.stateChanged.connect(self.select_your_struct_method)
-        self.Http_checkBox.stateChanged.connect(self.select_your_struct_method)
+        hide_dtm_feature(self, 0), welcoming_image(self, 2)
+        self.Fault_checkBox.setChecked(True)
+        load_msg = self.create_local_remote_serverbutton(
+            "Data Channel!", "JSON", "OTHER"
+        )
+        if load_msg == QMessageBox.Yes:
+            hide_all_combo_list(self, 1)
+            self.params_function_activator(True)
+            struct_comboHeader = [
+                "Dip*",
+                "Dip Direction*",
+                "Feature*",
+                "Dip Dir Convention*",
+                "Overturned Field",
+                "Point ID",
+            ]
+
+            label_mover(self, struct_comboHeader)
+            clear_partially_combo_list(self, 6, 1)
+            clear_partially_combo_list(self, 6, 0)
+            qline_and_label_mover(
+                340,
+                125,
+                340,
+                145,
+                " Bedding Text:",
+                self.Sill_Label,
+                self.Sill_LineEditor,
+            )
+            qline_and_label_mover(
+                340,
+                185,
+                340,
+                205,
+                " Overturned Text:",
+                self.Intrusion_Label,
+                self.Intrusion_LineEditor,
+            )
+            qlineeditor_default_string(self, "Bed", "overturned")
+            self.json_load_path = select_load_json_file(self)
+            json_data = read_json(str(self.json_load_path))
+            if json_data:
+                full_data = json.dumps(json_data, indent=4)
+            # Call the function to print the key-value pairs
+            (
+                struct_par,
+                struct_col,
+                self.StructPath,
+                self.DTM_filename,
+                self.csv_file,
+                self.hjson_file,
+            ) = print_keys_values(full_data, "Structure")
+            self.struc_col_dict = {"structure column": struct_col}
+            self.struct_data = list(struct_par.values())
+            # append data into combobox
+            data_from_json_to_cbbox(
+                self, combo_list(self), struct_par, struct_col, "Structure"
+            )
+        #################### JSON OR OTHER CHANNEL ##########################
+        else:
+            hide_dtm_feature(self, 1)
+            reset_qgis_cbox(self, 2)
+            disabled_qgis_chkbox(self)
+            self.File_checkBox.stateChanged.connect(self.select_your_struct_method)
+            self.Qgis_checkBox.stateChanged.connect(self.select_your_struct_method)
+            self.Http_checkBox.stateChanged.connect(self.select_your_struct_method)
         return
 
     def select_your_struct_method(self):
@@ -1486,6 +1620,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             else:
                 pass
             self.geol = geol_flag[0]
+            print(f" self.geol is : {self.geol}")
         except:
             pass
         return
@@ -1607,6 +1742,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                         ), self.ROIButton.setEnabled(True)
                         break
             self.DTM_filename = dtm_path[0]
+
             self.DTM_checkBox.setChecked(True)
             activate_config_file(self)
             retry_function(self, self.retryButton[0])
@@ -1875,23 +2011,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             fault_dict = dict(zip(fault_listKeys, self.fault_data))
             struct_dict = dict(zip(struct_listKeys, self.struct_data))
 
-            # Combine the dictionaries under labels
-            combined_load_parameter = {
-                "geol_head": geol_dict,
-                "fault_head": fault_dict,
-                "struct_head": struct_dict,
-            }
-
-            # Merge using the ** operator
-            merged_parameter_dict = {
-                **combined_load_parameter,
-                **self.geol_col_dict,
-                **self.fault_col_dict,
-                **self.struc_col_dict,
-            }
-            # print("Merge dictionary is: ", merged_parameter_dict)
-            save_param_to_json(merged_parameter_dict, json_path)
-
+            # # Create dictionary for json data loader
             mindeposit_lisKeys = ["msc", "msn", "mst", "mtc", "mscm", "mcom", "minf"]
             fold_lisKeys = ["ff", "fold", "t", "syn"]
             default_keys = ["volcanic", "fdipnull", "n", "deposit_dist"]
@@ -1904,7 +2024,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 + default_keys
             )
             formation_data = dict(zip(AllKeys, self.Alldata))
-            print("formation_data: ", formation_data)
 
             # list of data to strip
             list_to_strip = [self.geol_data, self.fault_data, self.struct_data]
@@ -1920,7 +2039,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 + "/process_source_data_"
                 + str(self.dt_string)
             )
-
+            self.processed_folder = process_source_data
             process_output_data = (
                 str(self.first_parent_folder) + "/output_data_" + str(self.dt_string)
             )
@@ -1947,7 +2066,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             source_data_for_local_server = (
                 str(self.plugin_dir) + "/map2loop_local_qgis_server/server/source_data"
             )
-
             # Check if output_data or source_data folder exist?
             self.check_if_directory_exist(list_new_directory)
             # check if source_data folder exist under plugin_dir/map2loop_local_qgis_server/server/
@@ -1978,10 +2096,37 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     ]
                     for file_to_move in extra_data_list:  # [
                         shutil.copy(file_to_move, process_source_data)
+
                 else:
                     pass
+
             except:
                 pass
+
+            # Combine the dictionaries under labels
+            combined_load_parameter = {
+                "geol_head": geol_dict,
+                "fault_head": fault_dict,
+                "struct_head": struct_dict,
+            }
+            combined_paths = {
+                "geol_path": self.GeolPath,
+                "fault_path": self.FaultPath,
+                "struct_path": self.StructPath,
+                "dtm_path": self.DTM_filename,
+                "csv_path": self.csv_file,
+                "hjson_path": self.hjson_file,
+            }
+            # Merge using the ** operator
+            merged_parameter_dict = {
+                **combined_load_parameter,
+                **self.geol_col_dict,
+                **self.fault_col_dict,
+                **self.struc_col_dict,
+                **combined_paths,
+            }
+            # print("Merge dictionary is: ", merged_parameter_dict)
+            save_param_to_json(merged_parameter_dict, json_path)
 
             for file, field_to_keep in zip(list_of_file, list_to_strip):
                 find_the_layer_name = str(file).rpartition("/")
@@ -2006,7 +2151,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                                 + "\\"
                                 + str(clipped_tif_names[0])
                             )
-                            print(f"tif file is {self.tif_file}")
+                            # print(f"tif file is {self.tif_file}")
                             shutil.copy(self.tif_file, process_source_data)
                         # # Find all names in the list where filename is a part of clipped_name
                         matching_names = [
@@ -2027,6 +2172,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 )
                 # create the geojson file associated with the above shapefile
                 create_geojson_file(strip_file, filename, process_source_data)
+
             self.file_to_keep = glob.glob(str(process_source_data) + "/*")
             # QMessageBox.about(self, "Data Creation", "Data type selection?")
 
@@ -2046,6 +2192,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.docker_config_file = self.save_your_python_file(
                     str(process_source_data)
                 )
+
             except:
                 Layerbutton = QMessageBox.question(
                     self,
@@ -2281,6 +2428,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         Then, return the following confirmation msg:  python file created*
         """
         self.filepath = str(source_path)
+        # print("formation_data 50: ")
         self.pyfilename = "Run_test"
 
         try:
@@ -2312,22 +2460,34 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                     dtm_filename = find_relative_path(self, self.dtm, self.DTM_filename)
 
         except:
+            try:
+                if self.json_flag == "LOAD":
+                    self.geol = "File_checkBox"
+                    self.fault = "File_checkBox"
+                    self.struct = "File_checkBox"
+                    self.dtm = "File_checkBox"
+                    for file_to_move in [
+                        self.csv_file,
+                        self.hjson_file,
+                        self.DTM_filename,
+                    ]:
+                        shutil.copy(file_to_move, self.processed_folder)
+            except:
+                pass
+
             geology_filename = find_relative_path(self, self.geol, self.GeolPath)
             fault_filename = find_relative_path(self, self.fault, self.FaultPath)
             structure_filename = find_relative_path(self, self.struct, self.StructPath)
             dtm_filename = find_relative_path(self, self.dtm, self.DTM_filename)
             fold_filename = find_relative_path(self, self.fault, self.FaultPath)
 
-        metadata_filename = ".\\" + "data.json"
         mindep_filename = "http://13.211.217.129:8080/geoserver/loop/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=loop:null_mindeps&bbox={BBOX_STR}&srs=EPSG:28350&outputFormat=shape-zip"
-        overwrite = "true"
-        verbose_level = "VerboseLevel.NONE"
         project_path = "..\\" + "/".join(str(source_path).split("/")[-1:])
         working_projection = str(self.crs_value)
-        out_dir = project_path
         ## Top and base value are hardcoded
         minx, miny, maxx, maxy = extract_bbox(self, self.DTM_filename)
         clipped_state = False
+
         # Update bbo and clipped_state
         try:
             if (
@@ -2335,7 +2495,6 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 and self.sender().objectName() == "Saveconfig_pushButton"
             ):
                 clipped_state = True
-                # print("update data here: ", Path(structure_filename).name)
                 minx, miny, maxx, maxy = extract_bbox(self, self.tif_file)
 
         except:
@@ -2380,102 +2539,7 @@ class Loop_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             "use_roi_clip": clipped_state,
             "roi_clip_path": "",
         }
-        proj_crs = str(self.crs_value)
 
-        clut_path = ""
-        qgz_file = "../source_data/map2loop.qgz"
-        qgz_split_name = qgz_file.split("/")[-1]
-        Module_Import = "from map2loop.project import Project \nfrom map2loop.m2l_enums import VerboseLevel \nimport shutil\n"
-        project_config = (
-            "proj = Project(\n"
-            "                geology_filename="
-            + "'"
-            + str(geology_filename)
-            + "'"
-            + ","
-            "\n                fault_filename="
-            + "'"
-            + str(fault_filename)
-            + "'"
-            + ",\n                fold_filename="
-            + "'"
-            + str(fold_filename)
-            + "'"
-            + ",\n                structure_filename="
-            + "'"
-            + str(structure_filename)
-            + "'"
-            + ",\n                mindep_filename="
-            + "'"
-            + str(mindep_filename)
-            + "'"
-            + ",\n                dtm_filename="
-            + "'"
-            + str(dtm_filename)
-            + "'"
-            + ",\n                metadata_filename="
-            + "'"
-            + str(metadata_filename)
-            + "'"
-            + ",\n                overwrite="
-            "'"
-            + str(overwrite)
-            + "'"
-            + ",\n                verbose_level=VerboseLevel.NONE"
-            + ",\n                project_path="
-            + "'"
-            + str(project_path)
-            + "'"
-            + ",\n                working_projection="
-            + "'"
-            + str(working_projection)
-            + "'"
-            + ",\n                )"
-        )
-        project_update = (
-            "\n \nproj.update_config(\n                    out_dir="
-            + "'"
-            + str(out_dir)
-            + "'"
-            + ",\n                    bbox_3d="
-            + str(bbox_3d)
-            + ",\n                    run_flags="
-            + str(run_flags)
-            + ",\n                    proj_crs="
-            + "'"
-            + str(proj_crs)
-            + "'"
-            + ",\n                    clut_path="
-            + "'"
-            + str(clut_path)
-            + "'"
-            + ",\n                )"
-        )
-        project_run = "\n \nproj.run()\n"
-        proj_dest = "proj.config.project_path"
-        qgz_move = "/" + str(qgz_split_name)
-        copyqgzfile = (
-            "shutil.copyfile("
-            + "'"
-            + str(qgz_file)
-            + "'"
-            + ", "
-            + str(proj_dest)
-            + "+'"
-            + str(qgz_move)
-            + "'"
-            + ")"
-        )
-        save_a_python_file(
-            self,
-            self.filepath,
-            self.pyfilename,
-            Module_Import,
-            project_config,
-            project_update,
-            project_run,
-            copyqgzfile,
-        )
         if self.dtm == "AU":
             self.docker_config_file = {
                 "bounding_box": str(bbox_3d),
