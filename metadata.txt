@@ -3,19 +3,17 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Loop processor
+name=Loop 3D Model Generator
 qgisMinimumVersion=3.0
-description=This plugin preprocess multiple layers to generate python script and json file that are used as input for map2loop 
-version=0.9.1
-author=Michel M. Nzikou / CET - UWA
+description=This plugin preprocess map layers using map2loop and use its output for 3D modelling using LoopStructural.
+version=0.1
+author=Center of Exploration Targeting, UWA
 email=michel.nzikoumamboukou@uwa.edu.au
 
-about=Allow the user to input various shapefile layers which is then processed to output a json and python script that is used as input for the map deconstruction engine known as map2Loop job.
-      Later this is used for 3D modelling purpose using our own LoopStructural algorithm.
+about=Allow the user to load various shapefile layers such as geology polygon, fault lines, structure point and DTM.These layers are then processed or augmented using map2loop algorith. The result of this deconstruction process is then pushed through LoopStructural for 3D modelling.
 
-tracker=https://github.com/Loop3D/qgis-loopplugin/issues
-repository=https://github.com/Loop3D/qgis-loopplugin
-
+tracker=http://bugs
+repository=http://repo
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,9 +23,9 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=QGIS, Layers, Attributes, Python, Json
+tags=python, LoopStructural, map2loop, docker
 
-homepage=https://github.com/Loop3D
+homepage=http://homepage
 category=Plugins
 icon=icon.png
 # experimental flag

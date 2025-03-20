@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/loop_plugin" >
+    <qresource prefix="/plugins/Loop3D_ModelGenerator" >
         <file>icon.png</file>
     </qresource>
 </RCC>

@@ -30,7 +30,7 @@
 "fdip_help": "Default Dip*: field for numeric fault dip value.",
 "fdipdir_params": ["dip_dir", "faultdipdi", "DipDirection", "No_col", "0"],
 "fdipdir_help": "Dip Direction*: field for text fault dip direction value.",
-"ff_params": ["feature", "CATEGORY", "codedescpt", "Type", "DESCRIPTIO", "FEATURETYP"],
+"ff_params": ["feature", "CATEGORY", "codedescpt", "Type", "DESCRIPTIO", "FEATURETYP", "SType"],
 "ff_help": "Feature*: field that contains information on type of structure.",
 "fdipest_params": ["dip_est", "HWALL_ROSE", "faultdipan", "Dip", "No_col", "0"],
 "fdipest_help": "Fdipest: field for text fault dip estimate value."

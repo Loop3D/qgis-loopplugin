@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  loopstructural:
+    build: .
+    labels:
+      - "maintainer= Michel M. Nzikou  michel.nzikoumamboukou@uwa.edu.au"
+      - " This  docker container create a loopstructural service for 3D modelling"
+#    network_mode: host
+    ports:
+      - "8888:8888"
+    restart: unless-stopped
+    tty: true
+    command: ["python3", "server/server.py", "--ip=0.0.0.0"]
+    volumes:
+      - output_data:/var/lib/docker/volumes/output_data/_data
+
+volumes:
+  output_data:
