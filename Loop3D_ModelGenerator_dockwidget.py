@@ -45,7 +45,7 @@ from .scripts.run.create_selection_box import ServerInfoPanel, Map2loopInQGIS
 from .scripts.run.info_text import How_to_run_models
 from .scripts.run.docker.run_docker import run_docker_compose
 from .scripts.run.docker.loopstructural_client import LoopClientManager
-#from .scripts.run.docker.data_transfert_to_local import DockerDataCopy
+
 # config
 from .scripts.config.loop_config import Loop3dConfig, CRSAppender
 from .scripts.config.settings_dict import SettingsDictionary
@@ -69,6 +69,7 @@ from .scripts.dtm.dtm_path_selector import DTMPathSelector
 from .scripts.roi.create_your_roi import create_scratch_layer_and_activate_clipping,save_roi_from_panel,DataClipper
 # hover event
 from .hover_event import assign_tooltips_to_ui_elements
+
 FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "Loop3D_ModelGenerator_dockwidget_base.ui")
 )
@@ -117,9 +118,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.load_configdata_from_json_radioButton.toggled.connect(
             self.fill_config_from_json
         )
-        # CRS
-        self.CRS_pushButton_load_value.clicked.connect(self.select_crs_value)
-        # Clear Selection
         # Use TabWidgetCleaner to clear all tabs after a delay
         self.ResetConfiguration_pushButton.clicked.connect(self.reset_widgets)
         # Run
@@ -153,11 +151,8 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.conf_JSON_radioButton.toggled.connect(self.select_dtm_path)
         self.conf_QGIS_radioButton.toggled.connect(self.select_dtm_path)
 
-        # Save Config parameters
-        # self.SaveAllConfig_pushButton.clicked.connect(self.save_all_config_parameters)
-        # self.SaveAllConfig_pushButton.clicked.connect(self.save_geol_parameters)
-        # self.SaveAllConfig_pushButton.clicked.connect(self.save_fault_parameters)
-        # self.SaveAllConfig_pushButton.clicked.connect(self.save_struct_parameters)
+       
+
         # 3D Visualization
         self.Run_viz_pushButton.clicked.connect(self.plot_surfaces)
         # Initialize the GeologyFaultStructureComboBoxes class with this window as the parent
@@ -173,7 +168,7 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # # Access the structure combo boxes and parameters
         self.struct_combo_boxes = boxes["struct_combo_boxes"]
         self.struct_param_boxes = boxes["struct_param_boxes"]
-
+    
         # Set Enable False the ROI features
         self.CreateROI_radioButton.setEnabled(False)
         self.ExistingROI_radioButton.setEnabled(False)
@@ -194,7 +189,88 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.Run_Preprocessor_pushButton.setEnabled(True)
         self.Run_LoopStructural_pushButton.setEnabled(False)
         self.Run_Map2loop_pushButton.setEnabled(False)     ## To be deleted soon
+
+        # Connect to geology clear button
+        self.geology_clear_pushButton.clicked.connect(lambda: self.reset_features("geology"))
+        self.fault_clear_pushButton.clicked.connect(lambda: self.reset_features("fault"))
+        self.struct_clear_pushButton.clicked.connect(lambda: self.reset_features("struct"))
+
+        # Call set_param_boxes_enabled(self, True) to enable or set_param_boxes_enabled(self, False) to disable. 
+        self.set_param_boxes_enabled(True)
         ###############################################################
+
+
+
+    def reset_features(self, feature_type):
+        """
+        Reset features dynamically for geology, fault, or struct.
+        
+        :param feature_type: The prefix for the feature set ("geology", "fault", or "struct").
+        """
+        # Refresh the list of layers in the combobox
+        checkbox_list = [getattr(self, f"{feature_type}_Qgis_checkBox"), 
+                        getattr(self, f"{feature_type}_json_checkBox")]
+        
+        for cbox in checkbox_list:
+            cbox.setEnabled(True)
+            if cbox.isChecked():
+                cbox.setChecked(False)
+                cbox.setEnabled(True)
+        
+        for combo_box in getattr(self, f"{feature_type}_combo_boxes", []):
+            combo_box.clear()
+        
+        for param_box in getattr(self, f"{feature_type}_param_boxes", []):
+            param_box.clear()
+        
+        getattr(self, f"{feature_type}_Ok_pushButton").setEnabled(True)
+        getattr(self, f"{feature_type}_Qgis_comboBox").clear()
+        getattr(self, f"{feature_type}_QLineEdit").clear()
+        
+        # Clear specific feature-related widgets
+      # Clear specific feature-related widgets dynamically
+        feature_widgets = {
+            "geology": ["sill_QLineEdit", "intrusion_QLineEdit", "tableWidget"],
+            "fault": ["ftext_QLineEdit", "fdipest_QLineEdit", "tableWidget"],
+            "struct": ["bedding_QLineEdit", "overturned_QLineEdit", "tableWidget"]
+        }
+        
+        for widget in feature_widgets.get(feature_type, []):
+            getattr(self, f"{feature_type}_{widget}").clear()
+
+        # Optimize enabling/disabling buttons
+        button_states = {
+            "Run_Preprocessor_pushButton": True,
+            "Run_Map2loop_pushButton": False,
+            "Run_LoopStructural_pushButton": False,
+            "Run_viz_pushButton": False
+        }
+        
+        for button, state in button_states.items():
+            getattr(self, button).setEnabled(state)
+
+    def set_param_boxes_enabled(self, enabled=True):
+        """
+        Fetch parameter boxes and enable/disable them dynamically.
+        Only includes attributes with 'param' in their name.
+        """
+        boxes = GeologyFaultStructureComboBoxes.get_combo_boxes_and_param_boxes(self)
+        
+        param_categories = ["geology_param_boxes", "fault_param_boxes", "struct_param_boxes"]
+        
+        for category in param_categories:
+            if hasattr(self, category):
+                param_boxes = getattr(self, category)
+                for param_box in param_boxes:
+                    if hasattr(param_box, 'setEnabled'):
+                        param_box.setEnabled(enabled)
+                        #print(f"{'Enabled' if enabled else 'Disabled'} {param_box.objectName()} ✅ else ❌")
+                        print(f"{'Enabled' if enabled else 'Disabled'} {param_box.objectName()} {'✅' if enabled else '❌'}")
+        
+        self.repaint()
+        self.update()
+
+
     def plot_surfaces(self):
         # This return a 3D plot of the model
         visualizer = VTKVisualizer(self.local_output_dir)
@@ -462,11 +538,12 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.lineEdit_dtm_path.setEnabled(True)
         json_handler = JSONDataPathHandler()
         self.json_data_path = json_handler.ensure_json_data_path()
+
         try:
             with open(self.json_data_path, "r") as file:
                 data = json.load(file)
                 self.lineEdit_param_load_source_path.setText(str(data["Input Folder"]))
-                self.CRS_lineEdit_value.setText(str(data["CRS Output"]))
+                #self.CRS_lineEdit_value.setText(str(data["CRS Output"]))
                 self.lineEdit_dtm_path.setText(str(data["DTM path"]))
 
         except (FileNotFoundError, json.JSONDecodeError):
@@ -490,8 +567,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
         except:
             self.show_message_box()
-            self.SaveGeology_pushButton.setEnabled(True)
-
         return
 
     def save_struct_parameters(self):
@@ -513,7 +588,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         except:
             self.show_message_box()
-            self.SaveFault_pushButton.setEnabled(True)
         return
 
     def save_fault_parameters(self):
@@ -539,7 +613,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             )
         except:
             self.show_message_box()
-            self.SaveFault_pushButton.setEnabled(True)
         return
 
     def show_message_box(self):
@@ -570,16 +643,16 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def save_all_config_parameters(self):
         # This function is used to save the configuration files
-        #self.Run_Preprocessor_pushButton.setEnabled(True)
+        self.crs_value_out = self.CRS_output_QgsProjectionSelectionWidget.crs().authid()
         config_settings = SettingsDictionary()
         config_settings.add_multiple_mappings(
             {
                 "Input Folder": self.lineEdit_param_load_source_path,
-                "CRS Output": self.CRS_lineEdit_value,
+                "CRS Output": str(self.crs_value_out),
                 "DTM path": self.lineEdit_dtm_path,
             }
         )
-
+       
         try:
             self.config_param = config_settings.create_dictionary()
             self.process_path = Path(self.config_param["Input Folder"])
@@ -618,7 +691,8 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if self.dtm_toggle == "QGIS":
             self.dtm_path = dtm_selector.update_line_edit()
         elif self.dtm_toggle == "AUS":
-            self.dtm_path = "https://services.ga.gov.au/gis/services/Bathymetry_Topography/MapServer/WCSServer?request=GetCapabilities&service=WCS"
+            #self.dtm_path = "https://services.ga.gov.au/gis/services/Bathymetry_Topography/MapServer/WCSServer?request=GetCapabilities&service=WCS"
+            self.dtm_path  = "https://services.ga.gov.au/gis/services/Bathymetry_Topography/MapServer/WCSServer?"
             self.lineEdit_dtm_path.setText(self.dtm_path)
             self.conf_log_listWidget.addItem(
                 f"DTM file path extract from <Geoscience Australia> server"
@@ -669,10 +743,13 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def select_crs_value(self):
         # Slect the crs value in the combobox and set it to the its label
-        self.crs_value = self.CRS_QgsProjectionSelectionWidget.crs().authid()
+        self.crs_value     = self.CRS_QgsProjectionSelectionWidget.crs().authid()
+        self.crs_value_out = self.CRS_output_QgsProjectionSelectionWidget.crs().authid()
+        print(f" Output crs is : {self.crs_value_out}")
         self.global_crs_value = {"CRS:", self.crs_value}
-        self.CRS_lineEdit_value.setText(str(self.crs_value))
-        self.conf_log_listWidget.addItem(f"Selected CRS value: {self.crs_value}")
+        print(f"CRS input: {self.crs_value}")
+        #self.CRS_lineEdit_value.setText(str(self.crs_value))
+        #self.conf_log_listWidget.addItem(f"Selected CRS value: {self.crs_value}")
         return
 
     def checkbox_toggled(self):

@@ -89,13 +89,9 @@ class GeologyLayerHandler:
 		# Initialize the combobox with available layers
 		self.populate_geology_layers()
 
-		# Connect the button click event to the clear qt features
-		self.clear_button.clicked.connect(self.reset_features)
-		self.geology_log_listWidget.addItem(f"Button connected: {self.clear_button.objectName()}")
-		#print(f"Button connected: {self.clear_button.objectName()}")  # Clear box
-		self.geology_button.clicked.connect(self.handle_geology_selection)
 		self.geology_log_listWidget.addItem(f"Button connected: {self.geology_button.objectName()}")
-		#print(f"Button connected: {self.geology_button.objectName()}")  # Debug print
+		self.geology_button.clicked.connect(self.handle_geology_selection)
+		
 
 	def populate_geology_layers(self):
 		"""
@@ -135,9 +131,7 @@ class GeologyLayerHandler:
 			"5",
 			"30",
 		]
-		#print("Button clicked!")  # Debug print
 		current_index = self.geology_combobox.currentIndex()
-		#print(f"Current index: {current_index}")  # Debug print
 
 		if current_index == -1:
 			self.geology_log_listWidget.addItem("No item selected")  # Debug print
@@ -179,37 +173,6 @@ class GeologyLayerHandler:
 		Refresh the list of geology layers in the combobox.
 		"""
 		self.populate_geology_layers()
-
-	def reset_features(self):
-		"""
-		Refresh the list of geology layers in the combobox.
-		"""
-		cbox_list = [self.qgis_cbox, self.json_cbox]
-		#self.SaveGeology_pushButton.setEnabled(True)
-		for cbox in cbox_list:
-			cbox.setEnabled(True)
-			if cbox.isChecked():
-				cbox.setChecked(False)
-				cbox.setEnabled(True)
-			else:
-				pass
-		for geology_cbbox in self.geology_combo_boxes:
-			geology_cbbox.clear()
-		for param_features in self.geology_param_boxes:
-			param_features.clear()
-		self.geology_button.setEnabled(True)
-		self.geology_combobox.clear()
-		self.geology_line_edit.clear()
-		self.sill_QLineEdit.clear()
-		self.intrusion_QLineEdit.clear()
-		# Clear data table
-		self.clear_table(self.geology_tableWidget)
-
-	def clear_table(self, table):
-		"""Clear all contents from the table."""
-		table.clear()
-		table.setRowCount(0)
-		table.setColumnCount(0)
 
 
 class GeologicalDataTable:

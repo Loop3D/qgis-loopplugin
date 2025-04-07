@@ -36,9 +36,8 @@ def assign_tooltips_to_ui_elements(self):
         "config_page": [
             [self.load_configdata_from_file_radioButton, "Click to select directory from which to load data from your computer"],
             [self.load_configdata_from_json_radioButton, "Click to load data using a pre-existing JSON file"],
-            [self.CRS_QgsProjectionSelectionWidget, "CRS selection: Select the right CRS"],
-            [self.CRS_pushButton_load_value, "Click to save your selected CRS value"],
-            [self.CRS_lineEdit_value, "The selected CRS value will be displayed here"],
+            [self.CRS_QgsProjectionSelectionWidget, "Input CRS selection: Select the right CRS"],
+            [self.CRS_output_QgsProjectionSelectionWidget, "Output CRS selection: Select the right CRS"],
             [self.conf_QGIS_radioButton, "Click to load DTM from QGIS panel"],
             [self.conf_AUS_radioButton, "Click to load DTM from GA server"],
             [self.conf_JSON_radioButton, "Click to load DTM from your pre-existing JSON file"],

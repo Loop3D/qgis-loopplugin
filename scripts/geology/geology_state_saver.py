@@ -86,6 +86,7 @@ class StateSaver:
         """
         Clears all widgets to their default state.
         """
+        
         # Clear standard combo boxes
         for box in self.geology_combo_boxes:
             box.setCurrentIndex(0)

@@ -39,6 +39,7 @@ import time
 import os, ast
 import json
 from pathlib import Path
+
 ##
 
 from datetime import datetime
@@ -66,6 +67,12 @@ class M2l_Wrapper:
 			os.makedirs(str(folder), exist_ok=True)
 
 
+	
+
+	def save_file(self,save_path: Path):
+		save_path = Path(save_path)  # Convert inside function if necessary
+		print(f"Saving file to {save_path}")
+		return save_path
 
 	def check_hjson_file(self,folder_path, filename="mapping.hjson"):
 		"""
@@ -130,7 +137,8 @@ class M2l_Wrapper:
 			working_projection        = str(self.conf_param['working_projection']),
 			bounding_box              = bbox_3d,
 			loop_project_filename     = str(loop_project_filename),
-			overwrite_loopprojectfile = True
+			overwrite_loopprojectfile = True,
+			output_dir                = Path(self.m2l_output_folder)
 		)
 
 		# Remove faults less than 5km
@@ -160,7 +168,12 @@ class M2l_Wrapper:
 		self.log_object.addItem(f"Map2loop Succesfully completed")
 		# Save mid point to csv
 		self.log_object.addItem(f"Now saving the mid points for thickness calculator")
-		proj.thickness_calculator[0].location_tracking.to_csv(str(self.m2l_output_folder)+"/midpoints_output.csv", index=False)  # index=False to exclude the row indexsave_mapdata_to_files(self.m2l_output_folder, ".csv.zip")
+		# Convert the string path to a Path object
+		# outputdir =self.save_file(self.m2l_output_folder)
+		# print(isinstance(outputdir, Path))
+		# # # Now call the method with the Path object
+		# proj.save_mapdata_to_files(str(outputdir), extension=".csv.zip")
+
 		self.log_object.addItem(f"The mid point data output is: {str(proj.thickness_calculator[0].location_tracking)}")
 		self.log_object.addItem(f"===============================================================================")
 		self.log_object.addItem(f"NOW RUN LOOPSTRUCTURAL")

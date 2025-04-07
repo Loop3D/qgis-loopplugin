@@ -138,8 +138,7 @@ class LayerCheckboxHandler:
         # Disable both checkboxes
         config['qgis_checkbox'].setEnabled(False)
         config['json_checkbox'].setEnabled(False)
-        
-        #print(f" What is the button click? {self.parent.sender().objectName()}")
+          
         
         if self.parent.sender().objectName() == f"{layer_type}_Qgis_checkBox":
             # Create and store the appropriate handler

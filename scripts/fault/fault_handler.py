@@ -90,19 +90,15 @@ class FaultLayerHandler:
 
 		# Initialize the combobox with available layers
 		self.populate_fault_layers()
-
-		# Connect the button click event to the clear qt features
-		self.fault_clear_button.clicked.connect(self.reset_features)
-		self.fault_log_listWidget.addItem(f"Button connected: {self.fault_clear_button.objectName()}")  # Clear box
+		self.fault_log_listWidget.addItem(f"Button connected: {self.fault_button.objectName()}") 
 		self.fault_button.clicked.connect(self.handle_fault_selection)
-		self.fault_log_listWidget.addItem(f"Button connected: {self.fault_button.objectName()}")  # Debug print
 
 	def populate_fault_layers(self):
 		"""
 		Read all polygon layers from QGIS and populate the combobox.
 		"""
 		self.fault_log_listWidget.addItem("Populating fault layers")  # Debug print
-		self.fault_combobox .clear()
+		self.fault_combobox.clear()
 
 		layers = QgsProject.instance().mapLayers().values()
 		layer_count = 0  # Debug counter
@@ -170,37 +166,6 @@ class FaultLayerHandler:
 		Refresh the list of geology layers in the combobox.
 		"""
 		self.populate_fault_layers()
-
-	def reset_features(self):
-		"""
-		Refresh the list of geology layers in the combobox.
-		"""
-		cbox_list = [self.fqgis_cbox, self.fjson_cbox]
-		#self.SaveFault_pushButton.setEnabled(True)
-		for cbox in cbox_list:
-			cbox.setEnabled(True)
-			if cbox.isChecked():
-				cbox.setChecked(False)
-				cbox.setEnabled(True)
-			else:
-				pass
-		for fault_cbbox in self.fault_combo_boxes:
-			fault_cbbox.clear()
-		for param_features in self.fault_param_boxes:
-			param_features.clear()
-		self.fault_button .setEnabled(True)
-		self.fault_combobox .clear()
-		self.fault_line_edit .clear()
-		self.fault_ftext_QLineEdit.clear()
-		self.fault_fdipest_QLineEdit.clear()
-		# Clear data table
-		self.clear_table(self.fault_tableWidget)
-
-	def clear_table(self, table):
-		"""Clear all contents from the table."""
-		table.clear()
-		table.setRowCount(0)
-		table.setColumnCount(0)
 
 
 class FaultDataTable:
