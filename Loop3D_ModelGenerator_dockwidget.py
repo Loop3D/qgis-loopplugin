@@ -37,7 +37,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QDir
 # visualiz
-from .scripts.run.viz.vizualize_vtk import VTKVisualizer
+from .scripts.run.viz.vizualize_surfaces import VTKVisualizer
 # run
 from .scripts.run.qgis.L2S_wrapper_in_qgis import LoopStructural_Wrapper_Qgis
 from .scripts.run.create_new_shapefile import ShapefileExtractorFromJSON
@@ -184,7 +184,7 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
        ## set qpushbutton off
         self.Run_LoopStructural_pushButton.setEnabled(False)
         self.loop_docker_pushButton.setEnabled(False)
-        self.Run_viz_pushButton.setEnabled(False)
+        self.Run_viz_pushButton.setEnabled(False)  
         #self.Run_Preprocessor_pushButton.setEnabled(False)
         self.Run_Preprocessor_pushButton.setEnabled(True)
         self.Run_LoopStructural_pushButton.setEnabled(False)
@@ -274,7 +274,7 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def plot_surfaces(self):
         # This return a 3D plot of the model
         visualizer = VTKVisualizer(self.local_output_dir)
-        visualizer.visualize()
+        visualizer.visualize(self.run_log_listWidget, title="3D Geological Model")
         self.run_log_listWidget.addItem(f" 3D Show ---> Success !!!!!")
 
     def show_input_dialog(self):
