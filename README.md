@@ -86,6 +86,64 @@ The Run tab supports multiple server environments:
 4. Set up structural point data in the Structure Layer Tab
 5. Run the processing workflow in the Run Tab
 
+# ROI-Based Clipping Tool for QGIS
+
+This tool allows users to clip spatial layers using a Region of Interest (ROI), either by creating one directly in QGIS or using an existing ROI layer.
+
+## 🛠️ Getting Started
+
+When you select **Clip Data**, you can define your ROI in one of two ways:
+
+---
+
+## 🗂 Option 1: Use Existing ROI
+
+1. Click **Existing ROI**.
+2. You will be prompted to choose one of the following:
+   - **QGIS Panel**:  
+     Select an ROI layer that is already loaded in your QGIS session.  
+     → All layers, including the selected ROI, will be listed in the text editor below the **Save ROI and Clip** button.
+   - **Local File**:  
+     Load an ROI shapefile from your computer.  
+     → The selected file will be displayed in the text editor below **Save ROI and Clip**.
+
+---
+
+## ✏️ Option 2: Create ROI
+
+1. Click **Create ROI**.
+2. A message will appear:  
+   > *"Draw your Region of Interest (ROI) on the map."*
+3. Click **OK**.
+4. Use the **Add Polygon Feature** tool in QGIS to draw your ROI directly on the map.
+5. Once finished:
+   - Click the **Save ROI** button.
+   - All available layers, including the newly created ROI, will be listed in the text editor below **Save ROI and Clip**.
+
+---
+
+## 🎯 Final Step: Select Layers to Clip
+
+After setting up the ROI using one of the two methods above:
+
+- Use the text editor to **select only the layers** you want to clip.
+- These should be relevant to your study or region.
+
+> **Example**:  
+> To clip data for the *Hammersley Basin*, you might select:  
+> `faults`, `geology`, `dtm`, and `structure`.
+
+---
+
+## 📌 Notes
+
+- Ensure all layers are loaded and visible in QGIS before proceeding.
+- ROI must be a polygon layer for successful clipping.
+- For optimal results, ensure all layers use the same CRS (Coordinate Reference System).
+
+---
+
+
 ## Support
 For issues or questions, please refer to the documentation or open an issue in this repository.
 
