@@ -31,6 +31,7 @@ import  datetime
 from pathlib import Path
 import platform
 
+from qgis.core import QgsProject
 from qgis.PyQt import QtWidgets, uic
 from qgis.utils import iface
 from qgis.PyQt.QtCore import pyqtSignal
@@ -226,9 +227,7 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         getattr(self, f"{feature_type}_Ok_pushButton").setEnabled(True)
         getattr(self, f"{feature_type}_Qgis_comboBox").clear()
         getattr(self, f"{feature_type}_QLineEdit").clear()
-        
-        # Clear specific feature-related widgets
-      # Clear specific feature-related widgets dynamically
+        # Clear specific feature-related widgets dynamically
         feature_widgets = {
             "geology": ["sill_QLineEdit", "intrusion_QLineEdit", "tableWidget"],
             "fault": ["ftext_QLineEdit", "fdipest_QLineEdit", "tableWidget"],
@@ -264,7 +263,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 for param_box in param_boxes:
                     if hasattr(param_box, 'setEnabled'):
                         param_box.setEnabled(enabled)
-                        #print(f"{'Enabled' if enabled else 'Disabled'} {param_box.objectName()} ✅ else ❌")
                         print(f"{'Enabled' if enabled else 'Disabled'} {param_box.objectName()} {'✅' if enabled else '❌'}")
         
         self.repaint()
@@ -285,8 +283,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
        
         if self.server_flag == "DOCKER":
             self.loop_docker_pushButton.setEnabled(False)
-            # self.loop_gcp_pushButton.setEnabled(False)
-            # self.loop_aws_pushButton.setEnabled(False)
             self.loop_qgis_pushButton.setEnabled(False)
             loop_obj = ServerInfoPanel(
                 run_log_listWidget=self.run_log_listWidget,
@@ -320,6 +316,15 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         server_output_folder     = './output_data/vtk'  # server output directory
         m2l_output = self.m2l_output_lineedit.text()
         l2s_output = self.l2s_output_lineedit.text()
+        # Account for clipping of data
+        if self.roi_flag =='clippeddata_radioButton':
+            m2l_original_path = Path(m2l_output)
+            l2s_original_path = Path(l2s_output)
+            m2l_output    = m2l_original_path.parent / "clipped" / m2l_original_path.name
+            l2s_output    = l2s_original_path.parent / "clipped" / l2s_original_path.name
+            print(f" The new m2l_output is: {m2l_output}")
+        else:
+            pass
         # move .loop3d
         loop3d_file = str(self.process_path / m2l_output / "local_source.loop3d")
         destination = str(self.process_data_path + "/")
@@ -462,8 +467,10 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.save_geol_parameters()
         self.save_fault_parameters()
         self.save_struct_parameters()
+    
         self.data_source_path = self.lineEdit_param_load_source_path.text().strip()
         self.data_source_dir = QDir(self.data_source_path)
+        print(f"self.data_source_path is: {self.data_source_path} ")
 
         self.run_log_listWidget.addItem(
             f" Running now {self.sender().text()} QPushbutton"
@@ -543,7 +550,6 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             with open(self.json_data_path, "r") as file:
                 data = json.load(file)
                 self.lineEdit_param_load_source_path.setText(str(data["Input Folder"]))
-                #self.CRS_lineEdit_value.setText(str(data["CRS Output"]))
                 self.lineEdit_dtm_path.setText(str(data["DTM path"]))
 
         except (FileNotFoundError, json.JSONDecodeError):
@@ -745,16 +751,11 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # Slect the crs value in the combobox and set it to the its label
         self.crs_value     = self.CRS_QgsProjectionSelectionWidget.crs().authid()
         self.crs_value_out = self.CRS_output_QgsProjectionSelectionWidget.crs().authid()
-        print(f" Output crs is : {self.crs_value_out}")
         self.global_crs_value = {"CRS:", self.crs_value}
-        print(f"CRS input: {self.crs_value}")
-        #self.CRS_lineEdit_value.setText(str(self.crs_value))
-        #self.conf_log_listWidget.addItem(f"Selected CRS value: {self.crs_value}")
         return
 
     def checkbox_toggled(self):
         # Deal with all checkbox in populating data
-        # ... other initialization code ...
         self.checkbox_handler = LayerCheckboxHandler(
             self,
             geology_log=self.geology_log_listWidget,
@@ -849,12 +850,12 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         else:
             self.save_roi.setEnabled(False)
             self.Ok_ClipLayer.setEnabled(True)
-            print(f"{sender.text()} is selected.")
+            #print(f"{sender.text()} is selected.")
             existing_roi_msg = self.config_folder_object.show_message_box(
                 "Choose an Option: ", "QGIS Panel", "Local File"
             )
             if existing_roi_msg == QMessageBox.No:
-                print(f"Load a local ROI file")
+                #print(f"Load a local ROI file")
                 self.selected_ROI_file_path = self.config_folder_object.select_file()
                 self.config_folder_object.populate_list_widget(
                     self.conf_shp_tif_listWidget
@@ -880,6 +881,13 @@ class Loop3DModelGenDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if roi_button:
             self.config_folder_object.populate_list_widget(self.conf_shp_tif_listWidget)
             self.path_roi = save_roi_from_panel(self, self.input_folder_path)
+            project = QgsProject.instance()
+            layers = project.mapLayers().values()
+            # Loop and remove layers that match 'ROI_Layer' in their name
+            for layer in layers:
+                # Delete the temporary ROI_Layers in QGIS panel
+                if "ROI_Layer" in layer.name():
+                    project.removeMapLayer(layer)
         else:
             iface.messageBar().pushWarning(
                 "Warning", f"Button '{roi_button}' not found"

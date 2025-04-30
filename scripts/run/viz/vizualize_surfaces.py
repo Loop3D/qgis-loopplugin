@@ -105,9 +105,9 @@ class VTKVisualizer(QWidget):
                 mesh = pv.read(s)
                 # Extract the fault name from the filename
                 fault_name = os.path.basename(s).replace(".vtk", "")
-                plotter.add_mesh(mesh, color="green", opacity=0.6, name=fault_name)
+                plotter.add_mesh(mesh, color="red", opacity=0.9, name=fault_name)
                 if i == 0:  # Add only one entry for all faults to avoid clutter
-                    legend_entries.append(["Faults", "green"])
+                    legend_entries.append(["Faults", "red"])
                 print(f"Added surface: {s}")
             except Exception as e:
                 print(f"Error loading surface {s}: {e}")
@@ -143,7 +143,7 @@ class VTKVisualizer(QWidget):
         print(f"Visualization completed with title '{title}' and legend")
         return plotter
 
-    def update_color_scheme(self, plotter, block_color="lightblue", fault_color="green", strat_color="brown"):
+    def update_color_scheme(self, plotter, block_color="lightblue", fault_color="red", strat_color="brown"):
         """Update the color scheme of the visualization and refresh the legend"""
         # Update block model color
         for actor in plotter.renderer.GetActors():
