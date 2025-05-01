@@ -21,6 +21,9 @@ In order to run map2loop you will need the following input files:
 3. Point data shapefile containing orientation data
 4. Digital Terain Model (DTM)
 
+### Test Data
+The test dataset is located in the testing_data directory. 
+
 ## Features
 - Multiple data loading options (shapefile, DTM, JSON)
 - Coordinate reference system management

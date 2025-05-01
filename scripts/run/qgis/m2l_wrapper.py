@@ -156,6 +156,7 @@ class M2l_Wrapper:
 		# Specify which stratigraphic columns sorter to use, other options are
 		# (SorterAlpha, SorterAgeBased, SorterUseHint, SorterUseNetworkX, SorterMaximiseContacts, SorterObservationProjections)
 		proj.set_sorter(SorterAlpha())
+		print(f" map2loop interpolator is: {self.m2l_par_dict['Interpolator function']}")
 		# assign the thickness calculator interpolator
 		if self.m2l_par_dict['Interpolator function']=="InterpStructure":
 			proj.thickness_calculator = [InterpolatedStructure()]
@@ -171,9 +172,10 @@ class M2l_Wrapper:
 		# Convert the string path to a Path object
 		# outputdir =self.save_file(self.m2l_output_folder)
 		# print(isinstance(outputdir, Path))
+		result_output=Path(os.path.join(self.m2l_output_folder,"location_tracking.csv"))
 		# # # Now call the method with the Path object
-		# proj.save_mapdata_to_files(str(outputdir), extension=".csv.zip")
-
+		#proj.save_mapdata_to_files(result_output, extension=".csv.zip")
+		proj.thickness_calculator[0].location_tracking.to_csv(str(result_output))
 		self.log_object.addItem(f"The mid point data output is: {str(proj.thickness_calculator[0].location_tracking)}")
 		self.log_object.addItem(f"===============================================================================")
 		self.log_object.addItem(f"NOW RUN LOOPSTRUCTURAL")

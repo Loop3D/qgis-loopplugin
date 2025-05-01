@@ -137,26 +137,3 @@ class Map2loopInQGIS:
 		return 
 
 
-# class Loop2structuralOnServer():
-# 	def __init__(self):
-# 		self.user_data = {}  # Store user input data
-
-
-# 	def log_input(self):
-# 		"""Logs user input."""
-# 		if self.user_data:
-# 			#print(f"User {self.user_data['name']}, hostname {self.user_data['hostname']}, portname {self.user_data['portname']}")
-# 			self.run_log_listWidget.addItem(f"Username: {self.user_data['name']}")
-# 			self.run_log_listWidget.addItem(f"Hostname: {self.user_data['hostname']}")
-# 			self.run_log_listWidget.addItem(f"Port Name: {self.user_data['portname']}")
-
-# 	def execute_function(self):
-# 		"""Uses stored data to execute a function when Run Loop Structural is clicked."""
-# 		if self.user_data:
-# 			#print(f"Executing function with: {self.user_data}")
-# 			self.run_log_listWidget.addItem(f"Executing with: {self.user_data}")
-# 		else:
-# 			#print("No data available. Please enter details first.")
-# 			self.run_log_listWidget.addItem("No data available. Please enter details first.")
-
-
