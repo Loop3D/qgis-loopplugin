@@ -174,7 +174,8 @@ class M2l_Wrapper:
 		# print(isinstance(outputdir, Path))
 		result_output=Path(os.path.join(self.m2l_output_folder,"location_tracking.csv"))
 		# # # Now call the method with the Path object
-		#proj.save_mapdata_to_files(result_output, extension=".csv.zip")
+		
+		#proj.save_mapdata_to_files(save_path= str(result_output), extension= ".shp.zip")
 		proj.thickness_calculator[0].location_tracking.to_csv(str(result_output))
 		self.log_object.addItem(f"The mid point data output is: {str(proj.thickness_calculator[0].location_tracking)}")
 		self.log_object.addItem(f"===============================================================================")

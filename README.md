@@ -6,14 +6,26 @@ This plugin provides a comprehensive workflow for managing and processing geolog
 
 ## Requirements
 ### Environment
-- QGIS>=3.38.1 (Grenoble)
 - All modules in the requirements.txt can individually be installed via OSGeo4W shell, i.e: (`pip install map2loop`)
 - Make sure the following versions exist:
 <br>````LoopProjectFile == 0.2.2````
 <br>````LoopStructural  == 1.6.8````
 <br>````map2loop        == 3.2.2````
 <br>````map2model       == 1.2.1````
-
+<br>````QGIS            == 3.40.3-Bratislava````
+<br>````QT              == 5.15.13 ````
+ Or run the following install on your qgis python console:
+ <br>````!pip install LoopProjectFile==0.2.2````
+<br>````!pip install LoopStructural==1.6.8````
+<br>````!pip install map2loop==3.2.2````
+<br>````!pip install map2model==1.2.1````
+<br>````!pip install pyvista````
+<br>````!pip install pyvistaqt````
+<br>````!pip install websockets````
+<br>````!pip install fiona````
+<br>````!pip install rasterio````
+Alternatively, you can run the same command into OSGeo4W Shell terminal by droping the exclamation symbol in front of pip.
+ 
 ### Data
 In order to run map2loop you will need the following input files:
 1. Polygon shapefile containing your lithologies
